@@ -1,0 +1,57 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "justinwongcn/moonauth/provider/dingtalk"
+
+import {
+  "justinwongcn/moonauth/core",
+}
+
+// Values
+pub async fn begin_auth(DingTalkConfig, @core.SuppliedSecrets) -> @core.AuthStart raise @core.AuthError
+
+pub async fn complete_auth(DingTalkConfig, @core.CallbackParams, @core.AuthStart) -> @core.ExternalIdentity raise @core.AuthError
+
+pub fn dingtalk_identity(String) -> @core.ExternalIdentity raise @core.AuthError
+
+pub fn dingtalk_parse_token(String) -> String raise @core.AuthError
+
+// Errors
+
+// Types and methods
+pub struct DefaultDingTalkProvider {
+  config : DingTalkConfig
+  oauth : &@core.OAuthAuthCode
+}
+pub async fn DefaultDingTalkProvider::begin_auth(Self, @core.SuppliedSecrets) -> @core.AuthStart raise @core.AuthError
+pub async fn DefaultDingTalkProvider::complete_auth(Self, @core.CallbackParams, @core.AuthStart) -> @core.ExternalIdentity raise @core.AuthError
+pub fn DefaultDingTalkProvider::config(Self) -> DingTalkConfig
+pub fn DefaultDingTalkProvider::new(DingTalkConfig) -> Self
+pub fn DefaultDingTalkProvider::with_oauth(Self, &@core.OAuthAuthCode) -> Self
+pub impl DingTalkProvider for DefaultDingTalkProvider
+
+pub struct DingTalkConfig {
+  client_id : String
+  client_secret : String
+  redirect_uri : String
+  scopes : Array[String]
+  authorization_endpoint : String
+  token_endpoint : String
+  user_info_endpoint : String
+  http : &@core.HttpClient
+  clock : &@core.Clock
+  random : &@core.RandomSource
+}
+pub fn DingTalkConfig::new(String, String, String) -> Self
+pub fn DingTalkConfig::with_clock(Self, &@core.Clock) -> Self
+pub fn DingTalkConfig::with_endpoints(Self, String, String, String) -> Self
+pub fn DingTalkConfig::with_global(Self) -> Self
+pub fn DingTalkConfig::with_http(Self, &@core.HttpClient) -> Self
+pub fn DingTalkConfig::with_random(Self, &@core.RandomSource) -> Self
+pub fn DingTalkConfig::with_scopes(Self, Array[String]) -> Self
+
+// Type aliases
+
+// Traits
+pub(open) trait DingTalkProvider {
+  async fn begin_auth(Self, @core.SuppliedSecrets) -> @core.AuthStart raise @core.AuthError
+  async fn complete_auth(Self, @core.CallbackParams, @core.AuthStart) -> @core.ExternalIdentity raise @core.AuthError
+}
