@@ -1,0 +1,13 @@
+import {
+  "justinwongcn/moonauth/core" @core,
+  "justinwongcn/moonauth/contract" @contract,
+  "justinwongcn/moonauth/provider/google" @google,
+  "justinwongcn/moonauth/passkey" @passkey,
+  "justinwongcn/moonauth/totp" @totp,
+  "justinwongcn/moonauth/store-memory" @store_memory,
+  "moonbitlang/async",
+}
+
+pkgtype(kind: "executable")
+
+supported_targets = "+native"

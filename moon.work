@@ -1,0 +1,8 @@
+members = [
+  ".",
+  "examples/minimal-google",
+  "examples/bare-async",
+  "examples/moonback",
+  "examples/mars",
+  "examples/switch-sdk",
+]

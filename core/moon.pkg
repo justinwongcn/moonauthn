@@ -1,0 +1,15 @@
+import {
+  "moonbitlang/core/encoding/utf8",
+  "moonbitlang/core/env",
+  "moonbitlang/async/http",
+}
+
+import {
+  "moonbitlang/core/debug",
+  "moonbitlang/async",
+} for "test"
+
+import {
+  "moonbitlang/core/debug",
+  "moonbitlang/async/http",
+} for "wbtest"

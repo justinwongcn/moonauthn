@@ -1,0 +1,333 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "justinwongcn/moonauth/core"
+
+// Values
+pub fn all_providers() -> Array[ProviderDescriptor]
+
+pub fn auth_audience_mismatch(String, String) -> AuthError
+
+pub fn auth_challenge_already_used() -> AuthError
+
+pub fn auth_challenge_expired() -> AuthError
+
+pub fn auth_challenge_mismatch() -> AuthError
+
+pub fn auth_challenge_not_found() -> AuthError
+
+pub fn auth_cross_origin_rejected() -> AuthError
+
+pub fn auth_error_code(AuthError) -> String
+
+pub fn auth_error_message(AuthError) -> String
+
+pub fn auth_from_jwt_reason(String, String, String) -> AuthError
+
+pub fn auth_http_status(Int, String) -> AuthError
+
+pub fn auth_invalid_input(String) -> AuthError
+
+pub fn auth_issuer_mismatch(String, String) -> AuthError
+
+pub fn auth_key_error(String) -> AuthError
+
+pub fn auth_missing_param(String) -> AuthError
+
+pub fn auth_network(String) -> AuthError
+
+pub fn auth_network_from(Error) -> AuthError
+
+pub fn auth_nonce_mismatch() -> AuthError
+
+pub fn auth_origin_mismatch(String, String) -> AuthError
+
+pub fn auth_parse(String) -> AuthError
+
+pub fn auth_parse_from(Error) -> AuthError
+
+pub fn auth_provider_error(String, String) -> AuthError
+
+pub fn auth_random_unavailable() -> AuthError
+
+pub fn auth_rp_id_mismatch() -> AuthError
+
+pub fn auth_sign_count_regression(Int, Int) -> AuthError
+
+pub fn auth_signature_invalid() -> AuthError
+
+pub fn auth_state_mismatch() -> AuthError
+
+pub fn auth_token_expired() -> AuthError
+
+pub fn auth_token_not_yet_valid() -> AuthError
+
+pub fn auth_type_mismatch(String, String) -> AuthError
+
+pub fn auth_unsupported(String) -> AuthError
+
+pub fn auth_unsupported_alg(String) -> AuthError
+
+pub fn lexicographic_compare(String, String) -> Int
+
+pub fn provider_descriptor(String) -> ProviderDescriptor?
+
+pub fn provider_ids() -> Array[String]
+
+pub fn sort_lexicographic(Array[String]) -> Array[String]
+
+pub fn sorted_keys(Map[String, String]) -> Array[String]
+
+// Errors
+pub(all) suberror AuthError {
+  Network(String)
+  HttpStatus(Int, String)
+  MissingParam(String)
+  StateMismatch
+  NonceMismatch
+  ChallengeNotFound
+  ChallengeExpired
+  ChallengeAlreadyUsed
+  ChallengeMismatch
+  SignatureInvalid
+  TokenExpired
+  TokenNotYetValid
+  IssuerMismatch(String, String)
+  AudienceMismatch(String, String)
+  UnsupportedAlg(String)
+  KeyError(String)
+  OriginMismatch(String, String)
+  RpIdMismatch
+  CrossOriginRejected
+  SignCountRegression(Int, Int)
+  TypeMismatch(String, String)
+  ProviderError(String, String)
+  ParseError(String)
+  InvalidInput(String)
+  RandomUnavailable
+  Unsupported(String)
+}
+
+// Types and methods
+pub(all) struct AssertionInput {
+  client_data_json : Bytes
+  authenticator_data : Bytes
+  signature : Bytes
+  credential_public_key : Bytes
+  expected_challenge : String
+  expected_origin : String
+  rp_id : String
+  stored_sign_count : Int
+}
+
+pub(all) struct AsyncHttpClient {
+  timeout_ms : Int?
+}
+pub fn AsyncHttpClient::new(timeout_ms? : Int) -> Self
+pub async fn AsyncHttpClient::send(Self, HttpRequest) -> HttpResponse raise AuthError
+pub impl HttpClient for AsyncHttpClient
+
+pub(all) struct AuthStart {
+  url : String
+  state : String
+  code_verifier : String?
+  nonce : String?
+}
+
+pub(all) struct AuthorizeRequest {
+  authorization_endpoint : String
+  client_id : String
+  redirect_uri : String
+  scopes : Array[String]
+  state : String
+  nonce : String?
+  code_challenge : String?
+  code_challenge_method : String?
+  response_mode : String?
+  extra : Map[String, String]
+}
+
+pub(all) struct CallbackParams {
+  params : Map[String, String]
+}
+pub fn CallbackParams::from_form_body(String) -> Self
+pub fn CallbackParams::from_pairs(Map[String, String]) -> Self
+pub fn CallbackParams::from_query_string(String) -> Self
+pub fn CallbackParams::get(Self, String) -> String?
+
+pub(all) struct ExternalIdentity {
+  provider : String
+  uid : String
+  uid_kind : UidKind
+  email : String?
+  email_verified : Bool
+  display_name : String?
+  avatar : String?
+  extra : Map[String, String]
+}
+
+pub(all) enum HttpMethod {
+  Get
+  Post
+}
+
+pub(all) struct HttpRequest {
+  method : HttpMethod
+  url : String
+  headers : Map[String, String]
+  body : String?
+}
+
+pub(all) struct HttpResponse {
+  status : Int
+  headers : Map[String, String]
+  body : String
+}
+
+pub(all) struct IdTokenClaims {
+  subject : String
+  issuer : String
+  audience : Array[String]
+  expires_at : Int64
+  issued_at : Int64
+  nonce : String?
+  email : String?
+  email_verified : Bool?
+  raw : Map[String, String]
+}
+
+pub(all) struct IdTokenExpectations {
+  issuers : Array[String]
+  audiences : Array[String]
+  nonce : String?
+  jwks_uri : String?
+  leeway_seconds : Int?
+}
+
+pub(all) struct ProviderDescriptor {
+  id : String
+  display_name : String
+  supports_pkce : Bool
+  supports_id_token : Bool
+  uid_kind : UidKind
+  doc_url : String
+}
+
+pub(all) struct RegistrationInput {
+  client_data_json : Bytes
+  attestation_object : Bytes
+  expected_challenge : String
+  expected_origin : String
+  rp_id : String
+}
+
+pub(all) enum SignAlg {
+  ES256
+  RS256
+}
+
+pub(all) enum SigningKey {
+  Pem(String)
+  Der(Bytes)
+}
+
+pub(all) struct SuppliedSecrets {
+  state : String?
+  code_verifier : String?
+  nonce : String?
+}
+
+pub(all) struct SystemClock {
+}
+pub fn SystemClock::new() -> Self
+pub fn SystemClock::now_unix(Self) -> Int64
+pub impl Clock for SystemClock
+
+pub(all) struct TokenExchangeRequest {
+  token_endpoint : String
+  client_id : String
+  client_secret : String?
+  code : String
+  redirect_uri : String
+  code_verifier : String?
+  extra : Map[String, String]
+}
+
+pub(all) struct TokenSet {
+  access_token : String
+  id_token : String?
+  refresh_token : String?
+  expires_in : Int?
+  token_type : String?
+  scope : String?
+  raw : Map[String, String]
+}
+
+pub(all) struct TotpOptions {
+  digits : Int
+  period : Int
+  algorithm : String
+}
+
+pub(all) enum UidKind {
+  Stable
+  Degraded
+}
+
+pub(all) struct VerifiedAssertion {
+  sign_count : Int
+  user_verified : Bool
+}
+
+pub(all) struct VerifiedRegistration {
+  credential_id : Bytes
+  public_key : Bytes
+  sign_count : Int
+  aaguid : String?
+  user_verified : Bool
+}
+
+// Type aliases
+
+// Traits
+pub(open) trait ChallengeStore {
+  async fn put(Self, String, String, Int) -> Unit raise AuthError
+  async fn take(Self, String) -> String? raise AuthError
+  async fn peek(Self, String) -> String? raise AuthError
+}
+
+pub(open) trait Clock {
+  fn now_unix(Self) -> Int64
+}
+
+pub(open) trait HttpClient {
+  async fn send(Self, HttpRequest) -> HttpResponse raise AuthError
+}
+
+pub(open) trait IdTokenVerifier {
+  async fn verify(Self, String, IdTokenExpectations) -> IdTokenClaims raise AuthError
+}
+
+pub(open) trait OAuthAuthCode {
+  async fn begin(Self, AuthorizeRequest) -> AuthStart raise AuthError
+  async fn exchange(Self, TokenExchangeRequest) -> TokenSet raise AuthError
+}
+
+pub(open) trait RandomSource {
+  fn bytes(Self, Int) -> Bytes raise AuthError
+}
+
+pub(open) trait SecretSigner {
+  fn sign(Self, SignAlg, SigningKey, Bytes) -> Bytes raise AuthError
+}
+
+pub(open) trait TotpPrimitive {
+  fn generate_secret(Self, Int) -> Bytes raise AuthError
+  fn otpauth_uri(Self, Bytes, String, String, TotpOptions) -> String raise AuthError
+  fn verify(Self, Bytes, String, Int64, Int) -> Bool raise AuthError
+  fn generate_recovery_codes(Self, Int) -> Array[String] raise AuthError
+  fn hash_recovery_codes(Self, Array[String]) -> Array[String] raise AuthError
+}
+
+pub(open) trait WebAuthnVerifier {
+  fn verify_registration(Self, RegistrationInput) -> VerifiedRegistration raise AuthError
+  fn verify_assertion(Self, AssertionInput) -> VerifiedAssertion raise AuthError
+}

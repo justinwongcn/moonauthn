@@ -1,0 +1,29 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "justinwongcn/moonauth/oidc"
+
+import {
+  "justinwongcn/moonauth/core",
+}
+
+// Values
+
+// Errors
+
+// Types and methods
+pub struct JwksIdTokenVerifier {
+  http : &@core.HttpClient
+  clock : &@core.Clock
+  ttl_seconds : Int64
+  // private fields
+}
+pub fn JwksIdTokenVerifier::new() -> Self
+pub fn JwksIdTokenVerifier::new_with_http(&@core.HttpClient) -> Self
+pub async fn JwksIdTokenVerifier::verify(Self, String, @core.IdTokenExpectations) -> @core.IdTokenClaims raise @core.AuthError
+pub fn JwksIdTokenVerifier::with_clock(Self, &@core.Clock) -> Self
+pub fn JwksIdTokenVerifier::with_http(Self, &@core.HttpClient) -> Self
+pub fn JwksIdTokenVerifier::with_ttl(Self, Int64) -> Self
+pub impl @core.IdTokenVerifier for JwksIdTokenVerifier
+
+// Type aliases
+
+// Traits

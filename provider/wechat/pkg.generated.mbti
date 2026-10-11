@@ -1,0 +1,72 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "justinwongcn/moonauth/provider/wechat"
+
+import {
+  "justinwongcn/moonauth/core",
+}
+
+// Values
+pub async fn begin_auth(WeChatConfig, @core.SuppliedSecrets) -> @core.AuthStart raise @core.AuthError
+
+pub async fn complete_auth(WeChatConfig, @core.CallbackParams, @core.AuthStart) -> @core.ExternalIdentity raise @core.AuthError
+
+pub fn wechat_authorize_url(WeChatConfig, String) -> String
+
+pub fn wechat_callback(String) -> @core.CallbackParams
+
+pub async fn wechat_fetch_token(WeChatConfig, String) -> WeChatToken raise @core.AuthError
+
+pub async fn wechat_fetch_userinfo(WeChatConfig, String, String) -> String raise @core.AuthError
+
+pub fn wechat_identity(String, String, fallback_unionid? : String?) -> @core.ExternalIdentity raise @core.AuthError
+
+pub fn wechat_parse_token(String) -> WeChatToken raise @core.AuthError
+
+pub fn wechat_percent_encode(String) -> String
+
+// Errors
+
+// Types and methods
+pub struct DefaultWeChatProvider {
+  config : WeChatConfig
+}
+pub async fn DefaultWeChatProvider::begin_auth(Self, @core.SuppliedSecrets) -> @core.AuthStart raise @core.AuthError
+pub async fn DefaultWeChatProvider::complete_auth(Self, @core.CallbackParams, @core.AuthStart) -> @core.ExternalIdentity raise @core.AuthError
+pub fn DefaultWeChatProvider::config(Self) -> WeChatConfig
+pub fn DefaultWeChatProvider::new(WeChatConfig) -> Self
+pub impl WeChatProvider for DefaultWeChatProvider
+
+pub struct WeChatConfig {
+  appid : String
+  secret : String
+  redirect_uri : String
+  scope : String
+  authorization_endpoint : String
+  token_endpoint : String
+  userinfo_endpoint : String
+  http : &@core.HttpClient
+  clock : &@core.Clock
+  random : &@core.RandomSource
+}
+pub fn WeChatConfig::new(String, String, String) -> Self
+pub fn WeChatConfig::with_clock(Self, &@core.Clock) -> Self
+pub fn WeChatConfig::with_endpoints(Self, String, String, String) -> Self
+pub fn WeChatConfig::with_http(Self, &@core.HttpClient) -> Self
+pub fn WeChatConfig::with_random(Self, &@core.RandomSource) -> Self
+pub fn WeChatConfig::with_scope(Self, String) -> Self
+
+pub(all) struct WeChatToken {
+  access_token : String
+  openid : String
+  unionid : String?
+  refresh_token : String?
+  expires_in : Int?
+}
+
+// Type aliases
+
+// Traits
+pub(open) trait WeChatProvider {
+  async fn begin_auth(Self, @core.SuppliedSecrets) -> @core.AuthStart raise @core.AuthError
+  async fn complete_auth(Self, @core.CallbackParams, @core.AuthStart) -> @core.ExternalIdentity raise @core.AuthError
+}

@@ -1,0 +1,13 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "justinwongcn/moonauth/http_e2e"
+
+// Values
+pub fn http_e2e_marker() -> String
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

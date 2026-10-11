@@ -1,0 +1,67 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "justinwongcn/moonauth/provider/apple"
+
+import {
+  "justinwongcn/moonauth/core",
+}
+
+// Values
+pub fn apple_callback(String) -> @core.CallbackParams
+
+pub fn apple_client_secret(AppleConfig) -> String raise @core.AuthError
+
+pub fn apple_identity(@core.IdTokenClaims) -> @core.ExternalIdentity
+
+pub fn apple_is_private_email(@core.IdTokenClaims) -> Bool
+
+pub fn apple_user_name(String) -> String?
+
+pub async fn begin_auth(AppleConfig, @core.SuppliedSecrets) -> @core.AuthStart raise @core.AuthError
+
+pub async fn complete_auth(AppleConfig, @core.CallbackParams, @core.AuthStart) -> @core.ExternalIdentity raise @core.AuthError
+
+// Errors
+
+// Types and methods
+pub struct AppleConfig {
+  client_id : String
+  redirect_uri : String
+  team_id : String
+  key_id : String
+  signing_key : @core.SigningKey
+  signer : &@core.SecretSigner
+  scopes : Array[String]
+  authorization_endpoint : String
+  token_endpoint : String
+  jwks_uri : String
+  issuer : String
+  http : &@core.HttpClient
+  clock : &@core.Clock
+  random : &@core.RandomSource
+}
+pub fn AppleConfig::new(String, String, String, String, @core.SigningKey) -> Self
+pub fn AppleConfig::with_clock(Self, &@core.Clock) -> Self
+pub fn AppleConfig::with_endpoints(Self, String, String, String, String) -> Self
+pub fn AppleConfig::with_http(Self, &@core.HttpClient) -> Self
+pub fn AppleConfig::with_random(Self, &@core.RandomSource) -> Self
+pub fn AppleConfig::with_scopes(Self, Array[String]) -> Self
+pub fn AppleConfig::with_signer(Self, &@core.SecretSigner) -> Self
+
+pub struct DefaultAppleProvider {
+  config : AppleConfig
+  oauth : &@core.OAuthAuthCode
+  id_token : &@core.IdTokenVerifier
+}
+pub async fn DefaultAppleProvider::begin_auth(Self, @core.SuppliedSecrets) -> @core.AuthStart raise @core.AuthError
+pub async fn DefaultAppleProvider::complete_auth(Self, @core.CallbackParams, @core.AuthStart) -> @core.ExternalIdentity raise @core.AuthError
+pub fn DefaultAppleProvider::config(Self) -> AppleConfig
+pub fn DefaultAppleProvider::new(AppleConfig) -> Self
+pub impl AppleProvider for DefaultAppleProvider
+
+// Type aliases
+
+// Traits
+pub(open) trait AppleProvider {
+  async fn begin_auth(Self, @core.SuppliedSecrets) -> @core.AuthStart raise @core.AuthError
+  async fn complete_auth(Self, @core.CallbackParams, @core.AuthStart) -> @core.ExternalIdentity raise @core.AuthError
+}

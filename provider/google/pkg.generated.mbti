@@ -1,0 +1,58 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "justinwongcn/moonauth/provider/google"
+
+import {
+  "justinwongcn/moonauth/core",
+}
+
+// Values
+pub async fn begin_auth(GoogleConfig, @core.SuppliedSecrets) -> @core.AuthStart raise @core.AuthError
+
+pub async fn complete_auth(GoogleConfig, @core.CallbackParams, @core.AuthStart) -> @core.ExternalIdentity raise @core.AuthError
+
+pub fn google_identity(@core.IdTokenClaims) -> @core.ExternalIdentity
+
+// Errors
+
+// Types and methods
+pub struct DefaultGoogleProvider {
+  config : GoogleConfig
+  oauth : &@core.OAuthAuthCode
+  id_token : &@core.IdTokenVerifier
+}
+pub async fn DefaultGoogleProvider::begin_auth(Self, @core.SuppliedSecrets) -> @core.AuthStart raise @core.AuthError
+pub async fn DefaultGoogleProvider::complete_auth(Self, @core.CallbackParams, @core.AuthStart) -> @core.ExternalIdentity raise @core.AuthError
+pub fn DefaultGoogleProvider::config(Self) -> GoogleConfig
+pub fn DefaultGoogleProvider::new(GoogleConfig) -> Self
+pub fn DefaultGoogleProvider::with_id_token(Self, &@core.IdTokenVerifier) -> Self
+pub fn DefaultGoogleProvider::with_oauth(Self, &@core.OAuthAuthCode) -> Self
+pub impl GoogleProvider for DefaultGoogleProvider
+
+pub struct GoogleConfig {
+  client_id : String
+  client_secret : String?
+  redirect_uri : String
+  scopes : Array[String]
+  authorization_endpoint : String
+  token_endpoint : String
+  jwks_uri : String
+  issuer : String
+  http : &@core.HttpClient
+  clock : &@core.Clock
+  random : &@core.RandomSource
+}
+pub fn GoogleConfig::new(String, String) -> Self
+pub fn GoogleConfig::with_client_secret(Self, String) -> Self
+pub fn GoogleConfig::with_clock(Self, &@core.Clock) -> Self
+pub fn GoogleConfig::with_endpoints(Self, String, String, String, String) -> Self
+pub fn GoogleConfig::with_http(Self, &@core.HttpClient) -> Self
+pub fn GoogleConfig::with_random(Self, &@core.RandomSource) -> Self
+pub fn GoogleConfig::with_scopes(Self, Array[String]) -> Self
+
+// Type aliases
+
+// Traits
+pub(open) trait GoogleProvider {
+  async fn begin_auth(Self, @core.SuppliedSecrets) -> @core.AuthStart raise @core.AuthError
+  async fn complete_auth(Self, @core.CallbackParams, @core.AuthStart) -> @core.ExternalIdentity raise @core.AuthError
+}

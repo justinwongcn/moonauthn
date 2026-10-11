@@ -1,0 +1,10 @@
+import {
+  "justinwongcn/moonauth/core" @core,
+  "mizchi/experimental_crypto/getrandom",
+}
+
+import {
+  "moonbitlang/core/debug",
+} for "test"
+
+options(supported_targets: "+native+js")

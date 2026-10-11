@@ -1,0 +1,40 @@
+# moonauth —— CI（薄壳）
+#
+# 🔴 说明：本文件**只做两件事**——`checkout` 与「调用 `ci/check.sh`」。
+# 所有检查逻辑都在 `ci/check.sh` 里，以保证「本机跑」与「CI 跑」**行为完全一致**。
+#
+# 注意：本地工作区 `/Users/john/Downloads/auth` **不是** git 仓库，故此 workflow
+# 在**本机无法以 GitHub Actions 形式运行**；本机请直接执行 `./ci/check.sh`。
+
+name: ci
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  check:
+    name: build + test (native & js)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: .   # 仓库根即 moonauth 模块根（含 moon.mod / ci/check.sh）
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install MoonBit toolchain
+        shell: bash
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+
+      - name: Toolchain version
+        run: moon version
+
+      - name: Run ci/check.sh
+        run: |
+          chmod +x ci/check.sh
+          ./ci/check.sh

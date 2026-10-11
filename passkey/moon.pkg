@@ -1,0 +1,18 @@
+import {
+  "justinwongcn/moonauth/core" @core,
+  "justinwongcn/moonauth/rand" @rand,
+  "justinwongcn/moonauth/store-memory" @store_memory,
+  "mizchi/experimental_crypto/webauthn" @webauthn,
+  "mizchi/experimental_crypto/cbor" @cbor,
+  "moonbitlang/core/json" @json,
+  "moonbitlang/core/encoding/utf8",
+}
+
+import {
+  "justinwongcn/moonauth/contract" @contract,
+  "mizchi/experimental_crypto/p256" @p256,
+  "moonbitlang/core/debug",
+  "moonbitlang/async",
+} for "test"
+
+options(supported_targets: "+native+js")

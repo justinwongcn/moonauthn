@@ -1,0 +1,21 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "justinwongcn/moonauth/rand"
+
+import {
+  "justinwongcn/moonauth/core",
+}
+
+// Values
+
+// Errors
+
+// Types and methods
+pub(all) struct GetrandomSource {
+}
+pub fn GetrandomSource::bytes(Self, Int) -> Bytes raise @core.AuthError
+pub fn GetrandomSource::new() -> Self
+pub impl @core.RandomSource for GetrandomSource
+
+// Type aliases
+
+// Traits

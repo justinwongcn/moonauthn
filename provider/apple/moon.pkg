@@ -1,0 +1,17 @@
+import {
+  "justinwongcn/moonauth/core" @core,
+  "justinwongcn/moonauth/oauth" @oauth,
+  "justinwongcn/moonauth/oidc" @oidc,
+  "justinwongcn/moonauth/rand" @rand,
+  "moonbitlang/core/encoding/utf8" @utf8,
+  "moonbitlang/core/json" @json,
+}
+
+import {
+  "justinwongcn/moonauth/contract" @contract,
+  "moonbitlang/core/debug",
+  "moonbitlang/async",
+  "moonbitstack/mooncrypt/sign/ecdsa" @ecdsa,
+} for "test"
+
+options(supported_targets: "+native+js")

@@ -1,0 +1,43 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "justinwongcn/moonauth/oauth"
+
+import {
+  "justinwongcn/moonauth/core",
+}
+
+// Values
+pub fn base64_std_decode(String) -> Bytes raise @core.AuthError
+
+pub fn base64_std_encode(Bytes) -> String
+
+pub fn base64url_decode(String) -> Bytes raise @core.AuthError
+
+pub fn base64url_encode(Bytes) -> String
+
+pub fn generate_code_verifier(&@core.RandomSource, byte_len? : Int) -> String raise @core.AuthError
+
+pub fn s256_challenge(String) -> String
+
+pub fn verify_s256(String, String) -> Bool
+
+// Errors
+
+// Types and methods
+pub struct MooncryptSecretSigner {
+}
+pub fn MooncryptSecretSigner::new() -> Self
+pub fn MooncryptSecretSigner::sign(Self, @core.SignAlg, @core.SigningKey, Bytes) -> Bytes raise @core.AuthError
+pub impl @core.SecretSigner for MooncryptSecretSigner
+
+pub struct StandardOAuthAuthCode {
+  http : &@core.HttpClient
+}
+pub async fn StandardOAuthAuthCode::begin(Self, @core.AuthorizeRequest) -> @core.AuthStart raise @core.AuthError
+pub async fn StandardOAuthAuthCode::exchange(Self, @core.TokenExchangeRequest) -> @core.TokenSet raise @core.AuthError
+pub fn StandardOAuthAuthCode::new() -> Self
+pub fn StandardOAuthAuthCode::with_http(Self, &@core.HttpClient) -> Self
+pub impl @core.OAuthAuthCode for StandardOAuthAuthCode
+
+// Type aliases
+
+// Traits

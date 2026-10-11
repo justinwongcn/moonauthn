@@ -1,0 +1,54 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "justinwongcn/moonauth/provider/x"
+
+import {
+  "justinwongcn/moonauth/core",
+}
+
+// Values
+pub async fn begin_auth(XConfig, @core.SuppliedSecrets) -> @core.AuthStart raise @core.AuthError
+
+pub async fn complete_auth(XConfig, @core.CallbackParams, @core.AuthStart) -> @core.ExternalIdentity raise @core.AuthError
+
+pub fn x_identity(String) -> @core.ExternalIdentity raise @core.AuthError
+
+// Errors
+
+// Types and methods
+pub struct DefaultXProvider {
+  config : XConfig
+  oauth : &@core.OAuthAuthCode
+}
+pub async fn DefaultXProvider::begin_auth(Self, @core.SuppliedSecrets) -> @core.AuthStart raise @core.AuthError
+pub async fn DefaultXProvider::complete_auth(Self, @core.CallbackParams, @core.AuthStart) -> @core.ExternalIdentity raise @core.AuthError
+pub fn DefaultXProvider::config(Self) -> XConfig
+pub fn DefaultXProvider::new(XConfig) -> Self
+pub impl XProvider for DefaultXProvider
+
+pub struct XConfig {
+  client_id : String
+  client_secret : String?
+  redirect_uri : String
+  scopes : Array[String]
+  authorization_endpoint : String
+  token_endpoint : String
+  userinfo_endpoint : String
+  http : &@core.HttpClient
+  clock : &@core.Clock
+  random : &@core.RandomSource
+}
+pub fn XConfig::new(String, String) -> Self
+pub fn XConfig::with_client_secret(Self, String) -> Self
+pub fn XConfig::with_clock(Self, &@core.Clock) -> Self
+pub fn XConfig::with_endpoints(Self, String, String, String) -> Self
+pub fn XConfig::with_http(Self, &@core.HttpClient) -> Self
+pub fn XConfig::with_random(Self, &@core.RandomSource) -> Self
+pub fn XConfig::with_scopes(Self, Array[String]) -> Self
+
+// Type aliases
+
+// Traits
+pub(open) trait XProvider {
+  async fn begin_auth(Self, @core.SuppliedSecrets) -> @core.AuthStart raise @core.AuthError
+  async fn complete_auth(Self, @core.CallbackParams, @core.AuthStart) -> @core.ExternalIdentity raise @core.AuthError
+}

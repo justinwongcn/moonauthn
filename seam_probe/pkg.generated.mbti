@@ -1,0 +1,53 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "justinwongcn/moonauth/seam_probe"
+
+import {
+  "justinwongcn/moonauth/core",
+}
+
+// Values
+pub async fn[H : @core.HttpClient, C : @core.Clock, V : @core.IdTokenVerifier] drive(H, C, V) -> String raise @core.AuthError
+
+pub async fn[S : @core.ChallengeStore] take_code(S, String) -> String
+
+// Errors
+
+// Types and methods
+pub(all) struct MyClock {
+}
+pub fn MyClock::new() -> Self
+pub fn MyClock::now_unix(Self) -> Int64
+pub impl @core.Clock for MyClock
+
+pub(all) struct MyFailingStore {
+}
+pub fn MyFailingStore::new() -> Self
+pub async fn MyFailingStore::peek(Self, String) -> String? raise @core.AuthError
+pub async fn MyFailingStore::put(Self, String, String, Int) -> Unit raise @core.AuthError
+pub async fn MyFailingStore::take(Self, String) -> String? raise @core.AuthError
+pub impl @core.ChallengeStore for MyFailingStore
+
+pub(all) struct MyHttp {
+}
+pub fn MyHttp::new() -> Self
+pub async fn MyHttp::send(Self, @core.HttpRequest) -> @core.HttpResponse raise @core.AuthError
+pub impl @core.HttpClient for MyHttp
+
+pub(all) struct MyStore {
+  mut v : String?
+}
+pub fn MyStore::new() -> Self
+pub async fn MyStore::peek(Self, String) -> String? raise @core.AuthError
+pub async fn MyStore::put(Self, String, String, Int) -> Unit raise @core.AuthError
+pub async fn MyStore::take(Self, String) -> String? raise @core.AuthError
+pub impl @core.ChallengeStore for MyStore
+
+pub(all) struct MyVerifier {
+}
+pub fn MyVerifier::new() -> Self
+pub async fn MyVerifier::verify(Self, String, @core.IdTokenExpectations) -> @core.IdTokenClaims raise @core.AuthError
+pub impl @core.IdTokenVerifier for MyVerifier
+
+// Type aliases
+
+// Traits

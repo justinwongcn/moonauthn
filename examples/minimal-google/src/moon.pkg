@@ -1,0 +1,7 @@
+import {
+  "justinwongcn/moonauth/provider/google" @google,
+}
+
+pkgtype(kind: "executable")
+
+supported_targets = "+native"

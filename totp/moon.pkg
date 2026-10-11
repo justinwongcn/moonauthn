@@ -1,0 +1,14 @@
+import {
+  "justinwongcn/moonauth/core" @core,
+  "justinwongcn/moonauth/rand" @rand,
+  "1726914517-spec/moon_otp" @otp,
+  "moonbitlang/core/encoding/utf8",
+}
+
+import {
+  "justinwongcn/moonauth/contract" @contract,
+  "moonbitlang/core/debug",
+  "moonbitlang/async",
+} for "test"
+
+options(supported_targets: "+native+js")

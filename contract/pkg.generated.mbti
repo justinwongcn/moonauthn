@@ -1,0 +1,112 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "justinwongcn/moonauth/contract"
+
+import {
+  "justinwongcn/moonauth/core",
+  "justinwongcn/moonauth/provider/google",
+}
+
+// Values
+pub fn all_pass(Array[CaseResult]) -> Bool
+
+pub fn assert_all_pass(Array[CaseResult]) -> Unit
+
+pub fn authorize_request() -> @core.AuthorizeRequest
+
+pub fn expectations() -> @core.IdTokenExpectations
+
+pub fn fixed_jwks() -> String
+
+pub fn fixed_now_unix() -> Int64
+
+pub let fixed_token_bad_aud : String
+
+pub let fixed_token_bad_iss : String
+
+pub let fixed_token_bad_nonce : String
+
+pub let fixed_token_bad_sig : String
+
+pub let fixed_token_expired : String
+
+pub fn fixed_token_kid2() -> String
+
+pub let fixed_token_ok : String
+
+pub let google_authorization_endpoint : String
+
+pub fn google_mock_config() -> @google.GoogleConfig
+
+pub fn google_token_ok_response() -> @core.HttpResponse
+
+pub fn jwks_response() -> @core.HttpResponse
+
+pub fn jwks_rotated_response() -> @core.HttpResponse
+
+pub fn oauth_token_responses() -> Array[@core.HttpResponse]
+
+pub fn ok_response(String) -> @core.HttpResponse
+
+pub async fn replay_once(@core.HttpRequest, Array[@core.HttpResponse], Int64) -> (@core.HttpResponse, Int64) raise @core.AuthError
+
+pub fn rfc6238_sha1_seed() -> Bytes
+
+pub async fn run_google(() -> @google.GoogleConfig) -> Array[CaseResult]
+
+pub async fn run_id_token(() -> &@core.IdTokenVerifier) -> Array[CaseResult]
+
+pub async fn run_oauth(() -> &@core.OAuthAuthCode) -> Array[CaseResult]
+
+pub fn run_totp(() -> &@core.TotpPrimitive) -> Array[CaseResult]
+
+pub fn run_webauthn(() -> &@core.WebAuthnVerifier) -> Array[CaseResult]
+
+pub fn run_webauthn_with(() -> &@core.WebAuthnVerifier, WebAuthnFixtures) -> Array[CaseResult]
+
+pub fn status_response(Int, String) -> @core.HttpResponse
+
+pub fn token_exchange_request() -> @core.TokenExchangeRequest
+
+// Errors
+
+// Types and methods
+pub(all) struct CaseResult {
+  name : String
+  passed : Bool
+  detail : String
+}
+pub fn CaseResult::fail(String, String) -> Self
+pub fn CaseResult::pass(String) -> Self
+
+pub struct FixedClock {
+  mut current : Int64
+}
+pub fn FixedClock::advance(Self, Int64) -> Unit
+pub fn FixedClock::new(Int64) -> Self
+pub fn FixedClock::now_unix(Self) -> Int64
+pub fn FixedClock::peek(Self) -> Int64
+pub fn FixedClock::set(Self, Int64) -> Unit
+pub impl @core.Clock for FixedClock
+
+pub struct MockHttpClient {
+  queue : Array[@core.HttpResponse]
+  log : Array[@core.HttpRequest]
+}
+pub fn MockHttpClient::new(Array[@core.HttpResponse]) -> Self
+pub fn MockHttpClient::push_response(Self, @core.HttpResponse) -> Unit
+pub fn MockHttpClient::recorded_requests(Self) -> Array[@core.HttpRequest]
+pub fn MockHttpClient::remaining(Self) -> Int
+pub async fn MockHttpClient::send(Self, @core.HttpRequest) -> @core.HttpResponse raise @core.AuthError
+pub impl @core.HttpClient for MockHttpClient
+
+pub(all) struct WebAuthnFixtures {
+  registration : @core.RegistrationInput
+  expected_credential_id : Bytes
+  expected_registration_sign_count : Int
+  assertion : @core.AssertionInput
+  expected_assertion_sign_count : Int
+}
+
+// Type aliases
+
+// Traits

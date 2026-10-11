@@ -1,0 +1,7 @@
+import {
+  "justinwongcn/moonauth/core" @core,
+}
+
+import {
+  "moonbitlang/async",
+} for "wbtest"

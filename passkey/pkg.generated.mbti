@@ -1,0 +1,126 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "justinwongcn/moonauth/passkey"
+
+import {
+  "justinwongcn/moonauth/core",
+}
+
+// Values
+
+// Errors
+
+// Types and methods
+pub(all) struct AuthenticationOptions {
+  challenge : String
+  rp_id : String
+  allow_credentials : Array[CredentialDescriptor]?
+  user_verification : String?
+  timeout : Int?
+}
+
+pub(all) struct AuthenticatorSelection {
+  authenticator_attachment : String?
+  resident_key : String?
+  require_resident_key : Bool?
+  user_verification : String?
+}
+pub fn AuthenticatorSelection::passkey() -> Self
+
+pub(all) struct CredentialDescriptor {
+  type_ : String
+  id : Bytes
+  transports : Array[String]?
+}
+pub fn CredentialDescriptor::public_key(Bytes) -> Self
+
+pub(all) struct PasskeyChallenge {
+  challenge : String
+  key : String
+  expires_at : Int64
+}
+
+pub(all) struct PasskeyConfig {
+  rp_id : String
+  rp_name : String
+  expected_origin : String
+  require_user_verification : Bool
+  challenge_ttl_seconds : Int
+}
+pub fn PasskeyConfig::new(String, String, String) -> Self
+pub fn PasskeyConfig::with_challenge_ttl(Self, Int) -> Self
+pub fn PasskeyConfig::with_user_verification(Self, Bool) -> Self
+
+pub(all) struct PasskeyCredential {
+  credential_id : Bytes
+  public_key : Bytes
+  sign_count : Int
+  aaguid : String?
+  user_verified : Bool
+  user_handle : Bytes?
+}
+pub fn PasskeyCredential::from_registration(@core.VerifiedRegistration) -> Self
+pub fn PasskeyCredential::with_user_handle(Self, Bytes) -> Self
+
+pub struct PasskeyService {
+  config : PasskeyConfig
+  verifier : &@core.WebAuthnVerifier
+  store : &@core.ChallengeStore
+  random : &@core.RandomSource
+  clock : &@core.Clock
+}
+pub fn PasskeyService::authentication_options(Self, PasskeyChallenge, allow_credentials? : Array[CredentialDescriptor], user_verification? : String?, timeout? : Int) -> AuthenticationOptions
+pub async fn PasskeyService::begin_authentication(Self) -> PasskeyChallenge raise @core.AuthError
+pub async fn PasskeyService::begin_registration(Self) -> PasskeyChallenge raise @core.AuthError
+pub fn PasskeyService::config(Self) -> PasskeyConfig
+pub async fn PasskeyService::finish_authentication(Self, @core.AssertionInput) -> @core.VerifiedAssertion raise @core.AuthError
+pub async fn PasskeyService::finish_authentication_stored(Self, String, @core.AssertionInput) -> @core.VerifiedAssertion raise @core.AuthError
+pub async fn PasskeyService::finish_registration(Self, @core.RegistrationInput) -> @core.VerifiedRegistration raise @core.AuthError
+pub async fn PasskeyService::finish_registration_stored(Self, String, @core.RegistrationInput) -> @core.VerifiedRegistration raise @core.AuthError
+pub fn PasskeyService::new(PasskeyConfig) -> Self
+pub fn PasskeyService::registration_options(Self, PasskeyChallenge, UserInfo, timeout? : Int, attestation? : String, authenticator_selection? : AuthenticatorSelection?, exclude_credentials? : Array[CredentialDescriptor]) -> RegistrationOptions
+pub fn PasskeyService::with_clock(Self, &@core.Clock) -> Self
+pub fn PasskeyService::with_random(Self, &@core.RandomSource) -> Self
+pub fn PasskeyService::with_store(Self, &@core.ChallengeStore) -> Self
+pub fn PasskeyService::with_verifier(Self, &@core.WebAuthnVerifier) -> Self
+
+pub(all) struct PublicKeyCredParam {
+  type_ : String
+  alg : Int
+}
+pub fn PublicKeyCredParam::es256() -> Self
+
+pub(all) struct RegistrationOptions {
+  challenge : String
+  rp : RpInfo
+  user : UserInfo
+  pub_key_cred_params : Array[PublicKeyCredParam]
+  timeout : Int?
+  attestation : String?
+  authenticator_selection : AuthenticatorSelection?
+  exclude_credentials : Array[CredentialDescriptor]?
+}
+
+pub(all) struct RpInfo {
+  id : String
+  name : String
+}
+
+pub struct StandardWebAuthnVerifier {
+  require_user_verification : Bool
+}
+pub fn StandardWebAuthnVerifier::new() -> Self
+pub fn StandardWebAuthnVerifier::require_user_verification(Self) -> Bool
+pub fn StandardWebAuthnVerifier::verify_assertion(Self, @core.AssertionInput) -> @core.VerifiedAssertion raise @core.AuthError
+pub fn StandardWebAuthnVerifier::verify_registration(Self, @core.RegistrationInput) -> @core.VerifiedRegistration raise @core.AuthError
+pub fn StandardWebAuthnVerifier::with_user_verification(Self, Bool) -> Self
+pub impl @core.WebAuthnVerifier for StandardWebAuthnVerifier
+
+pub(all) struct UserInfo {
+  id : Bytes
+  name : String
+  display_name : String?
+}
+
+// Type aliases
+
+// Traits

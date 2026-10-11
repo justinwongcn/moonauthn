@@ -1,0 +1,59 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "justinwongcn/moonauth/provider/qq"
+
+import {
+  "justinwongcn/moonauth/core",
+}
+
+// Values
+pub async fn begin_auth(QQConfig, @core.SuppliedSecrets) -> @core.AuthStart raise @core.AuthError
+
+pub async fn complete_auth(QQConfig, @core.CallbackParams, @core.AuthStart) -> @core.ExternalIdentity raise @core.AuthError
+
+pub fn qq_identity(String, String) -> @core.ExternalIdentity raise @core.AuthError
+
+pub fn qq_parse_openid(String) -> String raise @core.AuthError
+
+pub fn qq_parse_token(String) -> String raise @core.AuthError
+
+pub fn qq_unwrap_jsonp(String) -> String
+
+// Errors
+
+// Types and methods
+pub struct DefaultQQProvider {
+  config : QQConfig
+}
+pub async fn DefaultQQProvider::begin_auth(Self, @core.SuppliedSecrets) -> @core.AuthStart raise @core.AuthError
+pub async fn DefaultQQProvider::complete_auth(Self, @core.CallbackParams, @core.AuthStart) -> @core.ExternalIdentity raise @core.AuthError
+pub fn DefaultQQProvider::config(Self) -> QQConfig
+pub fn DefaultQQProvider::new(QQConfig) -> Self
+pub impl QQProvider for DefaultQQProvider
+
+pub struct QQConfig {
+  appid : String
+  appsecret : String
+  redirect_uri : String
+  scope : String
+  authorization_endpoint : String
+  token_endpoint : String
+  openid_endpoint : String
+  userinfo_endpoint : String
+  http : &@core.HttpClient
+  clock : &@core.Clock
+  random : &@core.RandomSource
+}
+pub fn QQConfig::new(String, String, String) -> Self
+pub fn QQConfig::with_clock(Self, &@core.Clock) -> Self
+pub fn QQConfig::with_endpoints(Self, String, String, String, String) -> Self
+pub fn QQConfig::with_http(Self, &@core.HttpClient) -> Self
+pub fn QQConfig::with_random(Self, &@core.RandomSource) -> Self
+pub fn QQConfig::with_scope(Self, String) -> Self
+
+// Type aliases
+
+// Traits
+pub(open) trait QQProvider {
+  async fn begin_auth(Self, @core.SuppliedSecrets) -> @core.AuthStart raise @core.AuthError
+  async fn complete_auth(Self, @core.CallbackParams, @core.AuthStart) -> @core.ExternalIdentity raise @core.AuthError
+}

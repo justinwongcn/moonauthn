@@ -1,0 +1,62 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "justinwongcn/moonauth/provider/alipay"
+
+import {
+  "justinwongcn/moonauth/core",
+}
+
+// Values
+pub async fn alipay_fetch_token(AlipayConfig, String) -> Map[String, String] raise @core.AuthError
+
+pub async fn alipay_fetch_userinfo(AlipayConfig, String) -> Map[String, String] raise @core.AuthError
+
+pub async fn alipay_gateway_call(AlipayConfig, String, String, Map[String, String]) -> Map[String, String] raise @core.AuthError
+
+pub fn alipay_identity(Map[String, String], String) -> @core.ExternalIdentity raise @core.AuthError
+
+pub fn alipay_sign(AlipayConfig, Map[String, String]) -> String raise @core.AuthError
+
+pub fn alipay_signing_string(Map[String, String]) -> String
+
+pub async fn begin_auth(AlipayConfig, @core.SuppliedSecrets) -> @core.AuthStart raise @core.AuthError
+
+pub async fn complete_auth(AlipayConfig, @core.CallbackParams, @core.AuthStart) -> @core.ExternalIdentity raise @core.AuthError
+
+// Errors
+
+// Types and methods
+pub struct AlipayConfig {
+  app_id : String
+  private_key : @core.SigningKey
+  redirect_uri : String
+  signer : &@core.SecretSigner
+  gateway_endpoint : String
+  authorize_endpoint : String
+  scope : String
+  http : &@core.HttpClient
+  clock : &@core.Clock
+  random : &@core.RandomSource
+}
+pub fn AlipayConfig::new(String, @core.SigningKey, String) -> Self
+pub fn AlipayConfig::with_clock(Self, &@core.Clock) -> Self
+pub fn AlipayConfig::with_endpoints(Self, String, String, String) -> Self
+pub fn AlipayConfig::with_http(Self, &@core.HttpClient) -> Self
+pub fn AlipayConfig::with_random(Self, &@core.RandomSource) -> Self
+pub fn AlipayConfig::with_signer(Self, &@core.SecretSigner) -> Self
+
+pub struct DefaultAlipayProvider {
+  config : AlipayConfig
+}
+pub async fn DefaultAlipayProvider::begin_auth(Self, @core.SuppliedSecrets) -> @core.AuthStart raise @core.AuthError
+pub async fn DefaultAlipayProvider::complete_auth(Self, @core.CallbackParams, @core.AuthStart) -> @core.ExternalIdentity raise @core.AuthError
+pub fn DefaultAlipayProvider::config(Self) -> AlipayConfig
+pub fn DefaultAlipayProvider::new(AlipayConfig) -> Self
+pub impl AlipayProvider for DefaultAlipayProvider
+
+// Type aliases
+
+// Traits
+pub(open) trait AlipayProvider {
+  async fn begin_auth(Self, @core.SuppliedSecrets) -> @core.AuthStart raise @core.AuthError
+  async fn complete_auth(Self, @core.CallbackParams, @core.AuthStart) -> @core.ExternalIdentity raise @core.AuthError
+}

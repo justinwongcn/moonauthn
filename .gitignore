@@ -1,0 +1,6 @@
+# 构建产物与第三方依赖缓存（可由 moon 重建/重新拉取）
+_build/
+.mooncakes/
+
+# macOS
+.DS_Store
