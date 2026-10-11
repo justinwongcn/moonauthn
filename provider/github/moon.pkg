@@ -1,0 +1,15 @@
+import {
+  "justinwongcn/moonauth/core" @core,
+  "justinwongcn/moonauth/oauth" @oauth,
+  "justinwongcn/moonauth/rand" @rand,
+  "moonbitlang/core/json" @json,
+}
+
+import {
+  "moonbitlang/core/json" @json,
+  "justinwongcn/moonauth/contract" @contract,
+  "moonbitlang/core/debug",
+  "moonbitlang/async",
+} for "test"
+
+options(supported_targets: "+native+js")
