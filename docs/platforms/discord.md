@@ -48,6 +48,10 @@ let identity = @discord.complete_auth(config, callback, start)
 - **token 请求**：标准 form POST（`client_id` + `client_secret` + `grant_type` +
   `code` + `redirect_uri` + `code_verifier`）；库走 `@oauth` seam，错误体
   `{"error":"invalid_grant",...}` 归一为 `ProviderError`。
+- 🔴 **畸形 `client_id` 的错误体不是标准形**：`client_id` 不是合法雪片号时，Discord
+  返回 400 + 字段校验错误 `{"client_id":["Value \"INVALID\" is not snowflake."]}`——
+  **没有** `error` 字段（L1 实测 2026-10-12）。此时库兜底为 `HttpStatus`（而非
+  `ProviderError`）；正常接入（合法 client_id）下错误仍是标准形，不受影响。
 - **`email` scope**：`users/@me` 的 `email` / `verified` 字段只在授权含 `email`
   scope 时返回；缺 scope 时 `email = None`、`email_verified = false`。
 - **雪片号是字符串**：`id` 在 JSON 里就是字符串（超 32 位），库按字符串原样采用，
