@@ -23,13 +23,17 @@ test "parse_urlencoded splits pairs and tolerates missing values" {
 ///|
 test "provider table is complete and consistent" {
   let ids = provider_ids()
-  @debug.assert_eq(ids.length(), 6)
+  @debug.assert_eq(ids.length(), 10)
   @debug.assert_eq(ids[0], "google")
   @debug.assert_eq(ids[1], "apple")
   @debug.assert_eq(ids[2], "wechat")
   @debug.assert_eq(ids[3], "qq")
   @debug.assert_eq(ids[4], "alipay")
   @debug.assert_eq(ids[5], "x")
+  @debug.assert_eq(ids[6], "github")
+  @debug.assert_eq(ids[7], "discord")
+  @debug.assert_eq(ids[8], "dingtalk")
+  @debug.assert_eq(ids[9], "feishu")
   for d in all_providers() {
     assert_true(d.doc_url.length() > 0)
     assert_true(d.display_name.length() > 0)
@@ -70,6 +74,34 @@ test "platform capability flags match the design table" {
       assert_false(d.supports_id_token)
     }
     None => abort("x descriptor missing")
+  }
+  match provider_descriptor("github") {
+    Some(d) => {
+      assert_true(d.supports_pkce)
+      assert_false(d.supports_id_token)
+    }
+    None => abort("github descriptor missing")
+  }
+  match provider_descriptor("discord") {
+    Some(d) => {
+      assert_true(d.supports_pkce)
+      assert_false(d.supports_id_token)
+    }
+    None => abort("discord descriptor missing")
+  }
+  match provider_descriptor("dingtalk") {
+    Some(d) => {
+      assert_true(d.supports_pkce)
+      assert_false(d.supports_id_token)
+    }
+    None => abort("dingtalk descriptor missing")
+  }
+  match provider_descriptor("feishu") {
+    Some(d) => {
+      assert_true(d.supports_pkce)
+      assert_false(d.supports_id_token)
+    }
+    None => abort("feishu descriptor missing")
   }
   assert_true(provider_descriptor("unknown") is None)
 }

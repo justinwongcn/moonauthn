@@ -48,8 +48,11 @@ KNOWN="$(find . \( -path './.mooncakes' -o -path './_build' \) -prune -o \
 have() { grep -qx -- "$1" <<<"${KNOWN}"; }
 
 # 本库包别名（moon.pkg 引用短名；`store-memory` 目录 → 别名 `store_memory`）。
+# 可跨行书写：匹配按「空格包围」进行，先把换行归一为空格。
 OUR_PKGS=" core oauth oidc passkey totp rand store_memory store-memory
-  contract qa_verify seam_probe http_e2e google apple x wechat qq alipay "
+  contract qa_verify seam_probe http_e2e google apple x wechat qq alipay
+  github discord dingtalk feishu "
+OUR_PKGS="${OUR_PKGS//$'\n'/ }"
 in_our_pkgs() { [[ "${OUR_PKGS}" == *" $1 "* ]]; }
 
 # 文档合法提及、但不属本库 `.mbti` 的例外（内建 / 第三方）。

@@ -21,7 +21,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 cd "${ROOT_DIR}"
 
-PROVIDERS=(google apple wechat qq alipay x)
+PROVIDERS=(google apple wechat qq alipay x github discord dingtalk feishu)
 
 red()   { printf '\033[31m%s\033[0m\n' "$*"; }
 green() { printf '\033[32m%s\033[0m\n' "$*"; }
@@ -60,7 +60,7 @@ echo "${OUT}" | grep -q "provider = google" || fail "minimal-google did not run 
 green "LIB-20 isolation OK (minimal-google runs, imports only provider/google)"
 
 step "6/7  第三方类型泄漏 grep（SDK-03）"
-# 先刷新 .mbti，再断言：六个 provider 的公开签名里不得出现任何第三方类型。
+# 先刷新 .mbti，再断言：十个 provider 的公开签名里不得出现任何第三方类型。
 moon info >/dev/null 2>&1 || true
 LEAKS=""
 for p in "${PROVIDERS[@]}"; do

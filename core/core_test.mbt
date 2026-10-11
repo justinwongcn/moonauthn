@@ -28,8 +28,8 @@ test "provider descriptors are queryable through the public API" {
     }
     None => abort("google descriptor missing")
   }
-  @debug.assert_eq(@core.provider_ids().length(), 6)
-  @debug.assert_eq(@core.all_providers().length(), 6)
+  @debug.assert_eq(@core.provider_ids().length(), 10)
+  @debug.assert_eq(@core.all_providers().length(), 10)
 }
 
 ///|

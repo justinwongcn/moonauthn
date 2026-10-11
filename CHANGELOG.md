@@ -13,6 +13,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   文档中的文件路径（权威来源 `ls`/`find`）、库内包路径（`justinwongcn/moonauth/...` 对目录）、
   库内标识符（`@pkg.Ident` / `Type::name` 对 `.mbti`）必须与实物一致；「伪包名」与「不存在的文件名」
   两类历史事故已通过注入坏例验证可被捕获。检查范围为随包发布的 `README.md` / `CHANGELOG.md` / `docs/**/*.md`。
+- **四个新平台 provider**：`provider/github`、`provider/discord`（标准 OAuth2 + PKCE，骑 `@oauth` seam）、
+  `provider/dingtalk`、`provider/feishu`（非标准协议自拼：钉钉 token 端点 JSON 体 + 驼峰字段 +
+  `x-acs-dingtalk-access-token` 鉴权头；飞书 v2 JSON 体 + `{code,msg,data}` 信封壳）。
+  两家国际版为**端点预设**：`DingTalkConfig::with_global()`（`*.dingtalk.io`）、
+  `FeishuConfig::with_lark()`（`*.larksuite.com`），协议同构、凭据隔离，`with_endpoints` 为逃生门。
+- **钉钉 / 飞书 UID 语义**：`unionId` / `union_id` 优先（`Stable`），仅 `openId` / `open_id` 时
+  `Degraded`（微信 unionid 同款先例）。
+- `core/provider_descriptor` 登记四行（supports_pkce 全 true、supports_id_token 全 false）；
+  `qa_verify/provider_ext_test.mbt`（库外视角对抗验证：授权 URL 含国际版预设、`state` 防线、
+  归一化、随机只经 seam）。
+- 四份平台文档：`docs/platforms/{github,discord,dingtalk,feishu}.md`（钉钉 / 飞书含
+  「国内版与国际版」对照节与凭据隔离警告）。
+
+### Fixed
+
+- 新增 provider 的归一化函数一律收**原始 JSON 文本**（`qq_identity` 先例），
+  `Json` 类型不出现在任何 `pub` 签名（SDK-03）。
 
 ## [0.1.0] - 2026-10-10
 

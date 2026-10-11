@@ -19,7 +19,7 @@
 | WebAuthn 验签 | `@core.WebAuthnVerifier` | `@passkey.StandardWebAuthnVerifier` | **是**（官方 WebAuthn 库） |
 | TOTP | `@core.TotpPrimitive` | `@totp.StandardTotpPrimitive` | **是**（官方 OTP 库） |
 | 签名 | `@core.SecretSigner` | 由 `@mooncrypt` 支撑 | 是（官方密码学库） |
-| 整个 provider | `@google.GoogleProvider` 等 6 个 | `Default…Provider` | 是（粗粒度整体替换） |
+| 整个 provider | `@google.GoogleProvider` 等 10 个 | `Default…Provider` | 是（粗粒度整体替换） |
 
 > 🔴 关键：trait 必须声明为 **`pub(open) trait`**，下游才能在**自己的包里**实现它。
 > （普通 `pub trait` 是只读的，跨包无法 impl。）

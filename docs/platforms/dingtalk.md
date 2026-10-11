@@ -1,0 +1,87 @@
+# 钉钉接入（含国际站）
+
+> 子包：`justinwongcn/moonauth/provider/dingtalk`
+> 协议：钉钉 v2 OAuth2（扫码 / 网页授权）；token 端点要求 **JSON 请求体**（驼峰字段）；用户信息走 **自定义鉴权头**。
+
+## 1. 申请步骤
+
+1. 打开 [钉钉开放平台](https://open.dingtalk.com/)（国际站为 [DingTalk Global](https://www.dingtalk.io/)）→ **应用开发 → 创建应用**。
+2. 应用详情 → **凭证与基础信息**：获得 **Client ID**（即 AppKey）与 **Client Secret**（即 AppSecret）。
+3. **登录与分享 → 回调地址**：配置回调域名（须与代码里 `redirect_uri` 一致）。
+4. 开通权限：**个人手机号信息 / 个人邮箱信息** 等按需申请（未开通时 `users/me` 不返回对应字段）。
+
+## 2. 国内站与国际站
+
+| 端点 | 国内站（默认） | 国际站（`with_global()` 预设） |
+|---|---|---|
+| 授权 | `https://login.dingtalk.com/oauth2/auth` | `https://login.dingtalk.io/oauth2/auth` |
+| 换 token | `https://api.dingtalk.com/v1.0/oauth2/userAccessToken` | `https://api.dingtalk.io/v1.0/oauth2/userAccessToken` |
+| 用户信息 | `https://api.dingtalk.com/v1.0/contact/users/me` | `https://api.dingtalk.io/v1.0/contact/users/me` |
+
+🔴 **两套部署的凭据体系完全隔离**：国内站应用凭据请求 `dingtalk.io` 会报错，反之亦然——
+应用在哪个站创建，就用哪套端点（`api.dingtalk.io` 为国际站官方 API 域名；授权 / 用户信息
+路径与国内站同构，若官方发布不同路径，用 `with_endpoints` 覆盖即可，不影响其他配置）。
+
+## 3. 库内配置
+
+```moonbit
+let config = @dingtalk.DingTalkConfig::new(
+  "CLIENT_ID",
+  "CLIENT_SECRET",
+  "https://your.app/auth/dingtalk/callback",
+)
+// 国际站：追加 .with_global()
+```
+
+| 字段 | 默认值 |
+|---|---|
+| `authorization_endpoint` | `https://login.dingtalk.com/oauth2/auth` |
+| `token_endpoint` | `https://api.dingtalk.com/v1.0/oauth2/userAccessToken` |
+| `user_info_endpoint` | `https://api.dingtalk.com/v1.0/contact/users/me` |
+| `scopes` | `["openid"]` |
+
+链式覆盖：`with_global()` / `with_scopes(Array[String])` / `with_endpoints(authz, token, me)` / `with_http` / `with_clock` / `with_random`。
+
+## 4. 用法
+
+```moonbit
+let start = @dingtalk.begin_auth(config, @core.SuppliedSecrets::{ state: None, code_verifier: None, nonce: None })
+let callback = @core.CallbackParams::from_query_string("authCode=...&state=...")
+let identity = @dingtalk.complete_auth(config, callback, start)
+```
+
+> 钉钉 v2 回调的授权码参数名可能是 `authCode`（扫码）或 `code`（网页授权）——
+> 取到后以 `code` 传给 `complete_auth` 的回调参数即可。
+
+`identity.uid = unionId`（跨应用稳定），`uid_kind = Stable`；仅拿到 `openId`
+（应用内标识）时降级 `Degraded`（微信 unionid 同款语义）。`display_name = nick`、
+`avatar = avatarUrl`；其余字段进 `extra`。
+
+单独可用的解析函数：
+
+```moonbit
+@dingtalk.dingtalk_parse_token(body)   // 解析 {"expireIn":...,"accessToken":"..."}
+@dingtalk.dingtalk_identity(user_json) // users/me 响应 JSON 文本 -> 身份
+```
+
+## 5. 🔴 踩坑点
+
+- 🔴 **换 token 是 JSON 请求体**：`POST /v1.0/oauth2/userAccessToken` 的请求体是
+  `{"clientId":...,"clientSecret":...,"code":...,"grantType":"authorization_code"}`
+  （**驼峰字段**，非 OAuth2 标准的 form）。库自实现该调用（授权 URL 组装仍复用
+  `@oauth` seam）。响应同为驼峰：`{"expireIn":...,"accessToken":"..."}`。
+- 🔴 **用户信息鉴权在自定义头**：`GET /v1.0/contact/users/me` 用
+  `x-acs-dingtalk-access-token: <userAccessToken>`，**不是** `Authorization: Bearer`。
+- 🔴 **`unionId` 默认不返回**：`users/me` 需带 `unionId=true` 请求参数才返回
+  跨应用稳定的 `unionId`；缺省时只有应用内的 `openId`。库已固定追加该参数。
+- **错误体**：v1.0 错误为非 2xx + `{"code":"...","message":"..."}` → 库归一为
+  `ProviderError(code, message)`。
+- **PKCE**：钉钉 v2 授权端点支持 `code_challenge`（S256），库默认全程启用；
+  换 token 时以 `codeVerifier` 字段随 JSON 体上送。
+- **`state` 必填**：`complete_auth` 会校验 `state`，不符抛 `StateMismatch`。
+
+## 6. 相关源码
+
+- 配置（含国内 / 国际端点常量与 `with_global` 预设）：`provider/dingtalk/config.mbt`
+- 默认实现 + token / userinfo 抓取：`provider/dingtalk/facade.mbt`
+- token 解析 + 身份归一：`provider/dingtalk/parse.mbt`
