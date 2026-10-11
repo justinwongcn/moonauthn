@@ -1,0 +1,55 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "justinwongcn/moonauth/provider/discord"
+
+import {
+  "justinwongcn/moonauth/core",
+}
+
+// Values
+pub async fn begin_auth(DiscordConfig, @core.SuppliedSecrets) -> @core.AuthStart raise @core.AuthError
+
+pub async fn complete_auth(DiscordConfig, @core.CallbackParams, @core.AuthStart) -> @core.ExternalIdentity raise @core.AuthError
+
+pub fn discord_identity(String) -> @core.ExternalIdentity raise @core.AuthError
+
+// Errors
+
+// Types and methods
+pub struct DefaultDiscordProvider {
+  config : DiscordConfig
+  oauth : &@core.OAuthAuthCode
+}
+pub async fn DefaultDiscordProvider::begin_auth(Self, @core.SuppliedSecrets) -> @core.AuthStart raise @core.AuthError
+pub async fn DefaultDiscordProvider::complete_auth(Self, @core.CallbackParams, @core.AuthStart) -> @core.ExternalIdentity raise @core.AuthError
+pub fn DefaultDiscordProvider::config(Self) -> DiscordConfig
+pub fn DefaultDiscordProvider::new(DiscordConfig) -> Self
+pub fn DefaultDiscordProvider::with_oauth(Self, &@core.OAuthAuthCode) -> Self
+pub impl DiscordProvider for DefaultDiscordProvider
+
+pub struct DiscordConfig {
+  client_id : String
+  client_secret : String?
+  redirect_uri : String
+  scopes : Array[String]
+  authorization_endpoint : String
+  token_endpoint : String
+  user_info_endpoint : String
+  http : &@core.HttpClient
+  clock : &@core.Clock
+  random : &@core.RandomSource
+}
+pub fn DiscordConfig::new(String, String) -> Self
+pub fn DiscordConfig::with_client_secret(Self, String) -> Self
+pub fn DiscordConfig::with_clock(Self, &@core.Clock) -> Self
+pub fn DiscordConfig::with_endpoints(Self, String, String, String) -> Self
+pub fn DiscordConfig::with_http(Self, &@core.HttpClient) -> Self
+pub fn DiscordConfig::with_random(Self, &@core.RandomSource) -> Self
+pub fn DiscordConfig::with_scopes(Self, Array[String]) -> Self
+
+// Type aliases
+
+// Traits
+pub(open) trait DiscordProvider {
+  async fn begin_auth(Self, @core.SuppliedSecrets) -> @core.AuthStart raise @core.AuthError
+  async fn complete_auth(Self, @core.CallbackParams, @core.AuthStart) -> @core.ExternalIdentity raise @core.AuthError
+}
