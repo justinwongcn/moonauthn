@@ -277,3 +277,31 @@ async test "dingtalk: default secrets come from the injected RandomSource" {
   @debug.assert_eq(a.state, b.state)
   @debug.assert_eq(a.code_verifier, b.code_verifier)
 }
+
+///|
+/// 🔴 空 `unionId` 视为缺失（同微信 `non_empty_opt` 先例）：降级到 `openId` 且
+/// `Degraded`——绝不允许 `uid=""` 且标 `Stable`。
+async test "dingtalk: empty unionId falls back to openId as Degraded" {
+  let identity = @dingtalk.dingtalk_identity(
+    "{\"nick\":\"n\",\"unionId\":\"\",\"openId\":\"ou-1\"}",
+  )
+  @debug.assert_eq(identity.uid, "ou-1")
+  match identity.uid_kind {
+    @core.UidKind::Degraded => ()
+    @core.UidKind::Stable => abort("empty unionId must not be Stable")
+  }
+}
+
+///|
+/// 🔴 信封 `code` 为**数值**形态（非字符串）时同样归一为 `ProviderError`。
+async test "dingtalk: numeric envelope code is normalized to provider_error" {
+  let code = try {
+    let _ = @dingtalk.dingtalk_identity(
+      "{\"code\":60104,\"message\":\"not exist\"}",
+    )
+    "no-error"
+  } catch {
+    e => @core.auth_error_code(e)
+  }
+  @debug.assert_eq(code, "provider_error")
+}

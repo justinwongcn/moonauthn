@@ -44,3 +44,33 @@ async test "custom response headers pass through AsyncHttpClient end to end" {
     @debug.assert_eq(resp.headers.get("X-Trace-Id"), Some("0123"))
   }
 }
+
+///|
+/// 🔴 seam 契约锁定：**非 2xx 不在传输层抛错**——`send` 原样返回 404 响应，
+/// 状态码归一是调用方的责任（见 `core/seams_io.mbt`）。
+async test "non-2xx responses are returned as-is, not raised" {
+  @async.with_task_group() <| group => {
+    let server = @http.Server(@socket.Addr::parse("127.0.0.1:0"))
+    group.add_defer(() => server.close())
+    group.spawn_bg(no_wait=true) <| () => {
+      server.run_forever() <| ((_request, _body, conn) => {
+        conn
+        ..send_response(404, "Not Found", extra_headers={
+          "Content-Type": "application/json",
+        })
+        .write("{\"error\":\"not_found\"}")
+      })
+    }
+    let port = server.addr.port()
+    let client = @core.AsyncHttpClient::new()
+    let req : @core.HttpRequest = {
+      method: @core.HttpMethod::Get,
+      url: "http://127.0.0.1:\{port}/missing",
+      headers: Map([]),
+      body: None,
+    }
+    let resp = client.send(req)
+    @debug.assert_eq(resp.status, 404)
+    @debug.assert_eq(resp.body, "{\"error\":\"not_found\"}")
+  }
+}

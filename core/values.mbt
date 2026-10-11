@@ -207,6 +207,13 @@ pub(all) struct IdTokenExpectations {
   nonce : String?
   jwks_uri : String?
   leeway_seconds : Int?
+  /// 可接受的 `id_token` 签名算法白名单（JOSE `alg`，如 `["RS256"]`）。
+  ///
+  /// 🔴 RFC 8725 §3.1：`alg` 来自**未验签**的 token 头，绝不能无条件信任——本库以
+  /// 「调用方钉死白名单」收敛。非空时严格比对（不命中即 `UnsupportedAlg`）；
+  /// 空数组 = 接受实现支持的任一算法（RS/ES 族，全部绑定 JWKS 公钥，无 `none`/HMAC 面）。
+  /// Provider 默认实现恒填平台实际算法（如 Google/Apple 均为 `["RS256"]`）。
+  algorithms : Array[String]
 }
 
 ///|

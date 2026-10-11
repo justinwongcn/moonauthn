@@ -19,7 +19,7 @@ async test "wechat: authorize URL uses the strict official order + #wechat_redir
   })
   @debug.assert_eq(
     start.url,
-    "https://open.weixin.qq.com/connect/oauth2/authorize?appid=wx123&redirect_uri=https%3A%2F%2Fapp.example%2Fcb&response_type=code&scope=snsapi_login&state=st-1#wechat_redirect",
+    "https://open.weixin.qq.com/connect/qrconnect?appid=wx123&redirect_uri=https%3A%2F%2Fapp.example%2Fcb&response_type=code&scope=snsapi_login&state=st-1#wechat_redirect",
   )
   @debug.assert_eq(start.state, "st-1")
   @debug.assert_eq(start.code_verifier, None)

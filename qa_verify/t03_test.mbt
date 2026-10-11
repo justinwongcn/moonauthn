@@ -231,7 +231,7 @@ async test "t03 §2.2 wechat authorize URL: strict order + percent-encoded redir
   })
   @debug.assert_eq(
     start.url,
-    "https://open.weixin.qq.com/connect/oauth2/authorize?appid=wx_TEST_appid&redirect_uri=https%3A%2F%2Fapp.example%2Fcb%3Fx%3D1%26y%3D2&response_type=code&scope=snsapi_login&state=ST-STATE#wechat_redirect",
+    "https://open.weixin.qq.com/connect/qrconnect?appid=wx_TEST_appid&redirect_uri=https%3A%2F%2Fapp.example%2Fcb%3Fx%3D1%26y%3D2&response_type=code&scope=snsapi_login&state=ST-STATE#wechat_redirect",
   )
 }
 
@@ -727,7 +727,7 @@ async test "t03 §2.6 six providers assemble their own authorization URLs" {
     @wechat.WeChatConfig::new("c", "s", "https://app.example/cb"),
     secrets,
   )
-  assert_true(w.url.has_prefix("https://open.weixin.qq.com/connect/oauth2/authorize?"))
+  assert_true(w.url.has_prefix("https://open.weixin.qq.com/connect/qrconnect?"))
   let q = @qq.begin_auth(
     @qq.QQConfig::new("c", "s", "https://app.example/cb"),
     secrets,

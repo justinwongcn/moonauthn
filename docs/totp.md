@@ -80,10 +80,17 @@ let ok = svc.verify_at(secret, code, 59L)      // 指定时间戳（确定性测
 ```moonbit
 let rec = svc.recovery_codes()          // 10 个；recovery_codes_with(n) 可指定数量
 // rec.plaintext : Array[String]  —— 明文，仅展示一次
-// rec.hashes    : Array[String]  —— 与 plaintext 一一对应的 hex(sha256(code))
+// rec.hashes    : Array[String]  —— 与 plaintext 一一对应的 64 位小写十六进制哈希
 ```
 
 - 🔴 **只持久化 `hashes`**；`plaintext` 展示一次后**必须丢弃**（库**只输出哈希、不含明文**的持久化路径）。
+- 🔴 **生产必须设 pepper**：恢复码全空间约 `30^8 ≈ 6.6e11`，无盐无钥的 `sha256(code)` 在
+  哈希库泄露后可被一块 GPU 一次穷举、**批量**撞出所有用户。用
+  `StandardTotpPrimitive::with_recovery_hash_pepper(bytes)` 注入服务器侧秘密后，
+  哈希变为 `hex(HMAC-SHA256(pepper, code))`——确定性不变（同 pepper + 同码 → 同哈希，
+  「按哈希查找」仍成立），但没有 pepper 就算不动。pepper **绝不**与哈希同库存放，
+  且更换 pepper 会使已持久化的哈希全部失效。未设 pepper 时回退裸 `sha256(code)`
+  （仅为兼容保留）。
 - 每个恢复码形如 `XXXX-XXXX`（两组、每组 4 位），字母表剔除易混的 `I` / `L` / `O` / `0` / `1`（共 30 个符号），
   互不重复。
 

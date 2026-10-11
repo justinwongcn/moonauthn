@@ -156,8 +156,23 @@ async test "pkce: code verifier is deterministic from the injected random source
   )
   // 默认 32 字节 → 43 字符，落在 RFC 允许的 43~128 区间
   @debug.assert_eq(@oauth.generate_code_verifier(src).length(), 43)
-  // 自定义 byte_len
-  @debug.assert_eq(@oauth.generate_code_verifier(src, byte_len=16).length(), 22)
+  // 🔴 RFC 7636 §4.1 护栏：越界 byte_len 被 `InvalidInput` 拒绝（过短 22 字符 / 过长）。
+  let too_short = try {
+    let _ = @oauth.generate_code_verifier(src, byte_len=16)
+    "no-error"
+  } catch {
+    e => @core.auth_error_code(e)
+  }
+  @debug.assert_eq(too_short, "invalid_input")
+  let too_long = try {
+    let _ = @oauth.generate_code_verifier(src, byte_len=97)
+    "no-error"
+  } catch {
+    e => @core.auth_error_code(e)
+  }
+  @debug.assert_eq(too_long, "invalid_input")
+  // 边界内仍合法：96 字节 → 128 字符
+  @debug.assert_eq(@oauth.generate_code_verifier(src, byte_len=96).length(), 128)
 }
 
 // ════════ base64 ════════
@@ -581,4 +596,104 @@ async test "oauth contract: StandardOAuthAuthCode passes every case" {
     subject
   })
   @contract.assert_all_pass(cases)
+}
+
+// ════════ 🔴 曲线 / 算法校验：非 P-256 材料一律 KeyError（绝不静默错签） ════════
+
+///|
+/// 手工 DER：SEC1 `ECPrivateKey`，标量 48 字节（P-384 形状）。
+/// `SEQUENCE { INTEGER 1, OCTET STRING (48B) }`。
+fn sec1_p384_like() -> Bytes {
+  let scalar : Array[Byte] = []
+  for _i in 0..<48 {
+    scalar.push(b'\xab')
+  }
+  Bytes::from_array([
+    0x30, 0x35, 0x02, 0x01, 0x01, 0x04, 0x30, ..scalar,
+  ])
+}
+
+///|
+/// 手工 DER：PKCS#8 包裹的 P-384 曲线密钥（AlgorithmIdentifier 声明 secp384r1）。
+/// `SEQUENCE { INTEGER 0, SEQ { OID id-ecPublicKey, OID secp384r1 }, OCTET STRING(SEC1) }`。
+fn pkcs8_wrong_curve() -> Bytes {
+  // secp384r1 = 1.3.132.0.34 → 2B 81 04 00 22
+  let sec1 = sec1_p384_like()
+  // AlgorithmIdentifier: 30 12 06 07 2A8648CE3D0201 06 05 2B81040022
+  let algid : Bytes = Bytes::from_array([
+    0x30, 0x12, 0x06, 0x07, 0x2A, 0x86, 0x48, 0xCE, 0x3D, 0x02, 0x01, 0x06,
+    0x05, 0x2B, 0x81, 0x04, 0x00, 0x22,
+  ])
+  // inner SEC1 octet string header: 04 35 (len 0x35)
+  let octet : Bytes = Bytes::from_array([0x04, 0x35]) + sec1
+  let body = Bytes::from_array([0x02, 0x01, 0x00]) + algid + octet
+  let total = body.length()
+  Bytes::from_array([0x30, total.to_byte()]) + body
+}
+
+///|
+/// 手工 DER：PKCS#8 包裹的 RSA 私钥形状（AlgorithmIdentifier 为 id-ecPublicKey）。
+/// 用于「RSA 路径拒绝异族 AlgorithmIdentifier」。
+fn pkcs8_rsa_with_ec_algid() -> Bytes {
+  // AlgorithmIdentifier: SEQ { OID id-ecPublicKey }
+  let algid : Bytes = Bytes::from_array([
+    0x30, 0x09, 0x06, 0x07, 0x2A, 0x86, 0x48, 0xCE, 0x3D, 0x02, 0x01,
+  ])
+  // privateKey OCTET STRING 内容无所谓（不会走到解析），给两个字节。
+  let inner : Bytes = Bytes::from_array([0x30, 0x00])
+  let octet : Bytes = Bytes::from_array([0x04, 0x02]) + inner
+  let body = Bytes::from_array([0x02, 0x01, 0x00]) + algid + octet
+  let total = body.length()
+  Bytes::from_array([0x30, total.to_byte()]) + body
+}
+
+///|
+/// SEC1 超宽标量（48 字节，P-384 形状）→ `key_error`，**不**截断成 P-256。
+async test "signer: over-wide SEC1 scalar is refused, not truncated" {
+  let signer : &@core.SecretSigner = @oauth.MooncryptSecretSigner::new()
+  let code = try {
+    let _ = signer.sign(
+      @core.SignAlg::ES256,
+      @core.SigningKey::Der(sec1_p384_like()),
+      @utf8.encode("msg"),
+    )
+    "no-error"
+  } catch {
+    e => @core.auth_error_code(e)
+  }
+  @debug.assert_eq(code, "key_error")
+}
+
+///|
+/// PKCS#8 声明 secp384r1 → `key_error`（曲线不符，绝不静默错签）。
+async test "signer: PKCS#8 with non-P256 curve OID is refused" {
+  let signer : &@core.SecretSigner = @oauth.MooncryptSecretSigner::new()
+  let code = try {
+    let _ = signer.sign(
+      @core.SignAlg::ES256,
+      @core.SigningKey::Der(pkcs8_wrong_curve()),
+      @utf8.encode("msg"),
+    )
+    "no-error"
+  } catch {
+    e => @core.auth_error_code(e)
+  }
+  @debug.assert_eq(code, "key_error")
+}
+
+///|
+/// RSA 路径收到 EC 的 AlgorithmIdentifier → `key_error`。
+async test "signer: RSA PKCS#8 with non-RSA AlgorithmIdentifier is refused" {
+  let signer : &@core.SecretSigner = @oauth.MooncryptSecretSigner::new()
+  let code = try {
+    let _ = signer.sign(
+      @core.SignAlg::RS256,
+      @core.SigningKey::Der(pkcs8_rsa_with_ec_algid()),
+      @utf8.encode("msg"),
+    )
+    "no-error"
+  } catch {
+    e => @core.auth_error_code(e)
+  }
+  @debug.assert_eq(code, "key_error")
 }

@@ -98,6 +98,7 @@ pub fn expectations() -> @core.IdTokenExpectations {
     nonce: Some("nonce-1"),
     jwks_uri: Some("mock://jwks"),
     leeway_seconds: Some(0),
+    algorithms: ["RS256"],
   }
 }
 
@@ -126,6 +127,56 @@ pub async fn run_id_token(make : () -> &@core.IdTokenVerifier) -> Array[CaseResu
   out.push(
     expect_error(v, fixed_token_bad_nonce, exp, "nonce_mismatch", "wrong nonce"),
   )
+  // 🔴 leeway 语义（边界锁定）：`fixed_token_expired` 过期于基准 now 之前
+  // 100_000_000 秒——leeway 恰好覆盖时接受、差 1 秒时仍拒绝，锁定「leeway 按
+  // 配置精确生效」。正例只锁定「通过」（其 exp 与 ok 向量不同，不走全量比对）。
+  let leeway_ok = {
+    ..exp,
+    leeway_seconds: Some(100_000_001),
+  }
+  let accepted = try {
+    let _ = @core.IdTokenVerifier::verify(v, fixed_token_expired, leeway_ok)
+    true
+  } catch {
+    _ => false
+  }
+  out.push(
+    if accepted {
+      CaseResult::pass("id_token: leeway covering expiry accepts the token")
+    } else {
+      CaseResult::fail(
+        "id_token: leeway covering expiry accepts the token",
+        "token still rejected with leeway=100000001",
+      )
+    },
+  )
+  let leeway_short = {
+    ..exp,
+    leeway_seconds: Some(99_999_999),
+  }
+  out.push(
+    expect_error(v, fixed_token_expired, leeway_short, "token_expired", "expired beyond leeway"),
+  )
+  out
+}
+
+///|
+/// 🔴 **JWKS 轮转**契约：kid 未命中 → 恰好强制重取一次 → 命中新 kid。
+/// 锁定「provider 轮换签名密钥后，同一验签器实例无需重建即可继续验签」。
+///
+/// 🔴 **调用方契约**：`make()` 产出的实现所接 `HttpClient` 的预置队列必须为
+/// `[jwks_response(), jwks_rotated_response()]`（第一份只含 `test-rsa-1`，第二份
+/// 只含 `test-rsa-2`），时钟取 `FixedClock(fixed_now_unix())`。
+pub async fn run_id_token_rotation(
+  make : () -> &@core.IdTokenVerifier,
+) -> Array[CaseResult] {
+  let v = make()
+  let exp = expectations()
+  let out : Array[CaseResult] = []
+  // 第一次：kid=test-rsa-1 → 填充缓存。
+  out.push(yield_claims(v, fixed_token_ok, exp))
+  // 第二次：kid=test-rsa-2 → 缓存未命中 → 强制重取（轮转后的 JWKS）→ 命中。
+  out.push(yield_claims(v, fixed_token_kid2(), exp))
   out
 }
 

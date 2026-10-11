@@ -1,7 +1,7 @@
 # 飞书接入（含国际版 Lark）
 
 > 子包：`justinwongcn/moonauth/provider/feishu`
-> 协议：飞书 / Lark 新版 OAuth 2.0（`/authen/v2/oauth/token`）；token 端点要求 **JSON 请求体**（snake_case 字段）；userinfo 响应套 `{code,msg,data}` 信封壳。
+> 协议：飞书 / Lark 新版 OAuth 2.0（`/authen/v2/oauth/token`）；token 端点要求 **JSON 请求体**（snake_case 字段）；token 与 userinfo 响应均套 `{code,msg,data}` 信封壳。
 
 ## 1. 申请步骤
 
@@ -57,7 +57,7 @@ let identity = @feishu.complete_auth(config, callback, start)
 单独可用的解析函数：
 
 ```moonbit
-@feishu.feishu_parse_token(body)   // v2 token 顶层 {"access_token":"..."}
+@feishu.feishu_parse_token(body)   // v2 token 响应（信封壳 data 内解，兼容平铺形态）
 @feishu.feishu_identity(user_json) // user_info 响应 JSON 文本（信封壳内解） -> 身份
 ```
 
@@ -67,12 +67,20 @@ let identity = @feishu.complete_auth(config, callback, start)
   `{"grant_type":"authorization_code","client_id":...,"client_secret":...,"code":...,
   "redirect_uri":...}`（**snake_case 字段**，非 OAuth2 标准的 form）。库自实现该调用
   （授权 URL 组装仍复用 `@oauth` seam）。PKCE 时以 `code_verifier` 字段随体上送。
-- 🔴 **userinfo 响应套信封壳**：`user_info` 回 `{"code":0,"msg":"success","data":{...}}`——
-  用户字段在 `data` 里；`code != 0` 是**业务错误**（HTTP 仍 200），库按 `code` 归一为
-  `ProviderError`。token v2 顶层无信封，`access_token` 直接在顶层。
-- **错误体两套**：token 端点（v2 遵循 OAuth2 标准）非 2xx 时是
-  `{"error":"invalid_grant","error_description":"..."}`；userinfo 是信封 `code/msg`。
-  库分别归一，均落 `ProviderError`。
+- 🔴 **token 与 userinfo 响应都套信封壳**：两者均回
+  `{"code":0,"msg":"success","data":{...}}`——token 的 `access_token` 在 `data` 里、
+  用户字段也在 `data` 里（与官方 Go/Node SDK 的响应模型一致）；`code != 0` 是
+  **业务错误**，库按 `code` 归一为 `ProviderError`。token 解析对「OAuth2 标准平铺形态
+  `{"access_token":"..."}`」保持兼容（信封优先、平铺兜底）。
+- **错误体两套**：token 端点非 2xx 时可能是 OAuth2 标准
+  `{"error":"invalid_grant","error_description":"..."}`，也可能是平台信封
+  `{"code":99991663,"msg":"...","data":null}`；userinfo 是信封 `code/msg`。库分别归一，
+  均落 `ProviderError`。
+- 🔴 **token 端点 v2 → v3 迁移**：官方已宣布令牌端点将由
+  `https://open.feishu.cn/open-apis/authen/v2/oauth/token` 迁往
+  `https://accounts.feishu.cn/oauth/v3/token`（v2 在淘汰路径）。当前库默认仍为 v2
+  （实测可用）；端点可用 `with_endpoints` 覆盖，接入前请以官方文档核对最新端点与
+  响应形态。
 - **权限未发布 = 拿不到字段**：`user_info` 返回的字段受应用**权限 + 版本发布**控制，
   未开通 / 未发布时字段缺失（不是报错）——`email` 缺失即 `email = None`。
 - **PKCE**：飞书新版 OAuth 支持 `code_challenge`（S256），库默认全程启用。

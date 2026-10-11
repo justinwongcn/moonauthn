@@ -161,6 +161,7 @@ pub async fn[H : @core.HttpClient, C : @core.Clock, V : @core.IdTokenVerifier] d
     nonce: None,
     jwks_uri: None,
     leeway_seconds: None,
+    algorithms: [],
   })
   let resp = @core.HttpClient::send(h, {
     method: @core.HttpMethod::Get,

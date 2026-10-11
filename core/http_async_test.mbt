@@ -56,9 +56,9 @@ async test "async send is repeatable within one async context (no abort)" {
 }
 
 ///|
-/// 非 2xx 归一：连接成功但状态码非 2xx 时应抛 `HttpStatus`。
-/// 这里不引入真实服务器，仅验证 `auth_error_code` 对 `HttpStatus` 的稳定归类，
-/// 作为 `send` 状态分支的补充锁定。
+/// 非 2xx 归一在**调用方**（默认客户端不在传输层抛 `HttpStatus`，见 `seams_io.mbt`
+/// 的 seam 契约）。此处仅锁定 `auth_error_code` 对 `HttpStatus` 的稳定归类，
+/// 供消费方引用。
 test "http status errors classify as http_status" {
   @debug.assert_eq(
     @core.auth_error_code(@core.HttpStatus(503, "down")),

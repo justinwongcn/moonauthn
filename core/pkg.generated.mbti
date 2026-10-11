@@ -200,6 +200,7 @@ pub(all) struct IdTokenExpectations {
   nonce : String?
   jwks_uri : String?
   leeway_seconds : Int?
+  algorithms : Array[String]
 }
 
 pub(all) struct ProviderDescriptor {

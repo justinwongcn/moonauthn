@@ -6,7 +6,6 @@ import {
 }
 
 import {
-  "moonbitlang/core/json" @json,
   "justinwongcn/moonauth/contract" @contract,
   "moonbitlang/core/debug",
   "moonbitlang/async",

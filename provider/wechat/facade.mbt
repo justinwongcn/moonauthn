@@ -103,11 +103,12 @@ pub async fn wechat_fetch_token(
   config : WeChatConfig,
   code : String,
 ) -> WeChatToken raise @core.AuthError {
+  // 🔴 动态值一律编码：appid/secret 由调用方配置，含特殊字符时未编码会静默坏请求。
   let url = config.token_endpoint +
     "?appid=" +
-    config.appid +
+    wechat_percent_encode(config.appid) +
     "&secret=" +
-    config.secret +
+    wechat_percent_encode(config.secret) +
     "&code=" +
     wechat_percent_encode(code) +
     "&grant_type=authorization_code"

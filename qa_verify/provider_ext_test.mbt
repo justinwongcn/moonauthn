@@ -263,13 +263,14 @@ async test "ext/discord: display_name fallback and avatar extension" {
 }
 
 ///|
-/// §3.4 discord：`global_name` 缺失回退 `username`；头像按哈希前缀选扩展名。
-async test "ext/discord: display_name fallback and avatar extension" {
+/// §3.4 discord（互补向量）：`global_name` 在场则**优先于** `username`；
+/// 非 `a_` 前缀的头像哈希按规则取 `.png`（动图哈希才取 `.gif`）。
+async test "ext/discord: global_name preferred and png avatar extension" {
   let id1 = @discord.discord_identity(
-    "{\"id\":\"42\",\"username\":\"u\",\"global_name\":null,\"avatar\":\"a_b\"}",
+    "{\"id\":\"42\",\"username\":\"u\",\"global_name\":\"G\",\"avatar\":\"b_c\"}",
   )
-  @debug.assert_eq(id1.display_name, Some("u"))
-  @debug.assert_eq(id1.avatar, Some("https://cdn.discordapp.com/avatars/42/a_b.gif"))
+  @debug.assert_eq(id1.display_name, Some("G"))
+  @debug.assert_eq(id1.avatar, Some("https://cdn.discordapp.com/avatars/42/b_c.png"))
 }
 
 // ════════ §4 随机只经注入 seam（缺省临时态可确定性重放） ════════

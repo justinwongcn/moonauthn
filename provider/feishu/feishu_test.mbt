@@ -27,9 +27,16 @@ impl @core.RandomSource for FixedRandomSource with fn bytes(self, n) {
 }
 
 ///|
-/// token 响应固定向量（v2 顶层、snake_case）。
+/// token 响应固定向量（**真实 v2 形态**：`{code,msg,data}` 信封，token 在 `data` 里）。
 fn feishu_token_ok() -> @core.HttpResponse {
-  let body = "{\"access_token\":\"u-at-1\",\"token_type\":\"Bearer\",\"expires_in\":6900,\"refresh_token\":\"u-rt-1\",\"scope\":\"\"}"
+  let body = "{\"code\":0,\"msg\":\"success\",\"data\":{\"access_token\":\"u-at-1\",\"token_type\":\"Bearer\",\"expires_in\":6900,\"refresh_token\":\"u-rt-1\",\"scope\":\"\"}}"
+  { status: 200, headers: Map([("Content-Type", "application/json")]), body }
+}
+
+///|
+/// token 响应兼容向量（OAuth2 标准平铺形态，token 在顶层）。
+fn feishu_token_flat_ok() -> @core.HttpResponse {
+  let body = "{\"access_token\":\"u-at-flat\",\"token_type\":\"Bearer\",\"expires_in\":6900}"
   { status: 200, headers: Map([("Content-Type", "application/json")]), body }
 }
 
@@ -250,6 +257,72 @@ async test "feishu: token endpoint error is normalized to provider_error" {
 }
 
 ///|
+/// token 端点非 2xx：平台信封错误体 `{code,msg,data:null}` → `ProviderError`。
+async test "feishu: token endpoint envelope error is normalized to provider_error" {
+  let config = feishu_fixed_config([
+    {
+      status: 400,
+      headers: Map([("Content-Type", "application/json")]),
+      body: "{\"code\":99991663,\"msg\":\"grant_type invalid\",\"data\":null}",
+    },
+  ])
+  let start = @feishu.begin_auth(config, {
+    state: Some("st-123"),
+    code_verifier: Some("verifier-1"),
+    nonce: None,
+  })
+  let callback = @core.CallbackParams::from_query_string(
+    "code=c&state=st-123",
+  )
+  let code = try {
+    let _ = @feishu.complete_auth(config, callback, start)
+    "no-error"
+  } catch {
+    e => @core.auth_error_code(e)
+  }
+  @debug.assert_eq(code, "provider_error")
+}
+
+///|
+/// 🔴 token 响应为**信封壳**（真实 v2 形态）→ 从 `data` 解出 token 并继续全链路。
+async test "feishu: enveloped token response unwraps data and completes" {
+  let config = feishu_fixed_config([
+    feishu_token_ok(),
+    feishu_userinfo_ok(),
+  ])
+  let start = @feishu.begin_auth(config, {
+    state: Some("st-123"),
+    code_verifier: Some("verifier-1"),
+    nonce: None,
+  })
+  let callback = @core.CallbackParams::from_query_string(
+    "code=c&state=st-123",
+  )
+  let identity = @feishu.complete_auth(config, callback, start)
+  @debug.assert_eq(identity.uid, "on-456")
+}
+
+///|
+/// token 响应为 OAuth2 平铺形态（顶层 `access_token`）→ 兼容接受。
+async test "feishu: flat token response stays compatible" {
+  let userinfo = feishu_userinfo_ok()
+  let config = feishu_fixed_config([
+    feishu_token_flat_ok(),
+    userinfo,
+  ])
+  let start = @feishu.begin_auth(config, {
+    state: Some("st-123"),
+    code_verifier: Some("verifier-1"),
+    nonce: None,
+  })
+  let callback = @core.CallbackParams::from_query_string(
+    "code=c&state=st-123",
+  )
+  let identity = @feishu.complete_auth(config, callback, start)
+  @debug.assert_eq(identity.uid, "on-456")
+}
+
+///|
 /// userinfo 信封 `code != 0`（业务错误，HTTP 200）→ `ProviderError`。
 async test "feishu: userinfo envelope error is normalized to provider_error" {
   let config = feishu_fixed_config([
@@ -300,4 +373,18 @@ async test "feishu: default secrets come from the injected RandomSource" {
   })
   @debug.assert_eq(a.state, b.state)
   @debug.assert_eq(a.code_verifier, b.code_verifier)
+}
+
+///|
+/// 🔴 空 `union_id` 视为缺失（同微信 `non_empty_opt` 先例）：降级到 `open_id` 且
+/// `Degraded`——绝不允许 `uid=""` 且标 `Stable`。
+async test "feishu: empty union_id falls back to open_id as Degraded" {
+  let identity = @feishu.feishu_identity(
+    "{\"code\":0,\"msg\":\"success\",\"data\":{\"name\":\"n\",\"union_id\":\"\",\"open_id\":\"ou-empty\"}}",
+  )
+  @debug.assert_eq(identity.uid, "ou-empty")
+  match identity.uid_kind {
+    @core.UidKind::Degraded => ()
+    @core.UidKind::Stable => abort("empty union_id must not be Stable")
+  }
 }

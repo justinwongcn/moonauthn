@@ -19,7 +19,7 @@ let config = @wechat.WeChatConfig::new("AppID", "AppSecret", "https://your.app/a
 
 | 字段 | 默认值 |
 |---|---|
-| `authorization_endpoint` | `https://open.weixin.qq.com/connect/oauth2/authorize` |
+| `authorization_endpoint` | `https://open.weixin.qq.com/connect/qrconnect` |
 | `token_endpoint` | `https://api.weixin.qq.com/sns/oauth2/access_token` |
 | `userinfo_endpoint` | `https://api.weixin.qq.com/sns/userinfo` |
 | `scope` | `snsapi_login` |
@@ -54,6 +54,11 @@ let identity = @wechat.complete_auth(config, callback, start)
 
 ## 4. 🔴 踩坑点（微信是**顺序强校验**的重灾区）
 
+- 🔴 **端点与 scope 必须配套切换（混用即 10016）**：微信有两套互不兼容的授权入口——
+  - `connect/qrconnect`（**开放平台网站应用**，PC 扫码登录）只接受 `scope = snsapi_login`——**库默认组合**，与上文「网站应用」申请路径对应；
+  - `connect/oauth2/authorize`（**公众号网页授权**，微信内 H5）只接受 `snsapi_base` / `snsapi_userinfo`。
+  两套体系交叉（如公众号端点配 `snsapi_login`）会被网关以 `errcode=10016`（invalid scope）拒绝且不提示原因。
+  公众号场景请一并切换：`with_endpoints("https://open.weixin.qq.com/connect/oauth2/authorize", token, userinfo).with_scope("snsapi_userinfo")`。
 - 🔴 **授权 URL 参数顺序必须逐字节一致**：
   `appid` → `redirect_uri` → `response_type` → `scope` → `state` → `#wechat_redirect`。
   库用**字符串模板**拼接（`provider/wechat/url.mbt`），**绝不**用 `Map` 迭代——迭代顺序不确定会导致校验失败。

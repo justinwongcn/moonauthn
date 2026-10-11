@@ -24,14 +24,19 @@ pub fn dingtalk_parse_token(body : String) -> String raise @core.AuthError {
 /// `pub` 签名上（SDK-03，同 `qq_identity` 先例）。
 pub fn dingtalk_identity(user_json : String) -> @core.ExternalIdentity raise @core.AuthError {
   let user = dingtalk_object(user_json, "userinfo response")
-  let uid_kind = match user.get("unionId") {
-    Some(String(_)) => @core.UidKind::Stable
-    _ => @core.UidKind::Degraded
+  // 2xx 体内嵌错误码的罕见分支也按统一口径归一（同 wechat_identity 先例）。
+  dingtalk_check_error(user)
+  // 🔴 空串视为缺失（同微信 `non_empty_opt` 先例）：`unionId: ""` 在场时若按
+  // 「键在场」判定会产出 `uid=""` 且标 `Stable`，下游按跨应用稳定标识建映射即踩空。
+  let union_id = dingtalk_non_empty(user.get("unionId"))
+  let uid_kind = match union_id {
+    Some(_) => @core.UidKind::Stable
+    None => @core.UidKind::Degraded
   }
-  let uid = match dingtalk_string_opt(user.get("unionId")) {
+  let uid = match union_id {
     Some(u) => u
     None =>
-      match dingtalk_string_opt(user.get("openId")) {
+      match dingtalk_non_empty(user.get("openId")) {
         Some(o) => o
         None =>
           raise @core.ParseError(
@@ -79,15 +84,17 @@ fn dingtalk_raise_http_error(resp : @core.HttpResponse) -> Unit raise @core.Auth
   }
   match parsed {
     Some(Object(m)) => {
+      // 口径（全库统一）：`code` 兼容字符串与数值两形态，非零即业务错误。
       let code = match m.get("code") {
         Some(String(s)) => s
+        Some(Number(d, ..)) => d.to_int().to_string()
         _ => ""
       }
       let message = match m.get("message") {
         Some(String(s)) => s
         _ => ""
       }
-      if code != "" {
+      if code != "" && code != "0" {
         raise @core.ProviderError(code, message)
       }
       raise @core.HttpStatus(resp.status, resp.body)
@@ -99,16 +106,33 @@ fn dingtalk_raise_http_error(resp : @core.HttpResponse) -> Unit raise @core.Auth
 ///|
 /// 若对象含 `code`（钉钉错误体，2xx 响应内嵌错误的罕见分支）→ `ProviderError`。
 fn dingtalk_check_error(m : Map[String, Json]) -> Unit raise @core.AuthError {
+  // 口径（全库统一）：能解出数值且非零 → 报错；`0` / 缺字段 → 成功；
+  // `code` 兼容字符串与数值两形态（钉钉文档以字符串为主，数值形态实测亦存在）。
+  let message = match m.get("message") {
+    Some(String(s)) => s
+    _ => ""
+  }
   match m.get("code") {
-    Some(String(code)) => {
-      // 成功响应无 `code` 字段；带 `code` 即错误体。
-      let message = match m.get("message") {
-        Some(String(s)) => s
-        _ => ""
+    Some(Number(d, ..)) =>
+      if d.to_int() != 0 {
+        raise @core.ProviderError(d.to_int().to_string(), message)
       }
-      raise @core.ProviderError(code, message)
-    }
+    Some(String(code)) =>
+      if code != "" && code != "0" {
+        raise @core.ProviderError(code, message)
+      }
     _ => ()
+  }
+}
+
+///|
+/// `Json?` → 非空字符串（`null` / 缺失 / `""` → `None`）。
+///
+/// uid 判定专用：空串不能当稳定标识（见 `dingtalk_identity` 内注释）。
+fn dingtalk_non_empty(value : Json?) -> String? {
+  match dingtalk_string_opt(value) {
+    Some(s) => if s.length() > 0 { Some(s) } else { None }
+    None => None
   }
 }
 

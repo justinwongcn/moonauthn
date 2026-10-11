@@ -43,15 +43,17 @@ pub impl AlipayProvider for DefaultAlipayProvider with fn begin_auth(self, secre
     Some(v) => v
     None => alipay_random_state(self.config.random)
   }
+  // 🔴 动态值一律编码：state 可能由调用方自带（SuppliedSecrets），不编码会被
+  // `&`/`#` 截断甚至注入 query（支付宝对畸形 query 只回笼统签名错误）。
   let url = self.config.authorize_endpoint +
     "?app_id=" +
-    self.config.app_id +
+    alipay_percent_encode(self.config.app_id) +
     "&scope=" +
-    self.config.scope +
+    alipay_percent_encode(self.config.scope) +
     "&redirect_uri=" +
     alipay_percent_encode(self.config.redirect_uri) +
     "&state=" +
-    state
+    alipay_percent_encode(state)
   { url, state, code_verifier: None, nonce: None }
 }
 

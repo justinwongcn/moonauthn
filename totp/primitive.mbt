@@ -29,6 +29,8 @@
 pub struct StandardTotpPrimitive {
   random : &@core.RandomSource
   config : TotpConfig
+  /// 恢复码哈希的 **pepper**（服务器侧秘密，见 `hash_recovery_codes`）；`None` = 未设。
+  pepper : Bytes?
 }
 
 ///|
@@ -36,7 +38,7 @@ pub struct StandardTotpPrimitive {
 /// `TotpConfig::new("moonauth", "user")`（SHA-1 / 6 位 / 30 秒）。
 pub fn StandardTotpPrimitive::new() -> StandardTotpPrimitive {
   let random : &@core.RandomSource = @rand.GetrandomSource::new()
-  { random, config: TotpConfig::new("moonauth", "user") }
+  { random, config: TotpConfig::new("moonauth", "user"), pepper: None }
 }
 
 ///|
@@ -45,7 +47,21 @@ pub fn StandardTotpPrimitive::with_random(
   self : StandardTotpPrimitive,
   random : &@core.RandomSource,
 ) -> StandardTotpPrimitive {
-  { random, config: self.config }
+  { random, config: self.config, pepper: self.pepper }
+}
+
+///|
+/// 设置恢复码哈希的 **pepper**（服务器侧秘密，返回**新**实例）。
+///
+/// 🔴 强烈建议设置：见 `hash_recovery_codes`——pepper 把「数据库泄露后恢复码可被
+/// GPU 一次穷举批量撞出」变成「没有 pepper 就算不动」。pepper 需**稳定且保密**
+///（换 pepper 会使已持久化的哈希全部失效）。确定性保持不变：同 pepper + 同码
+/// → 同哈希，「按哈希查找」的用法不受影响。
+pub fn StandardTotpPrimitive::with_recovery_hash_pepper(
+  self : StandardTotpPrimitive,
+  pepper : Bytes,
+) -> StandardTotpPrimitive {
+  { random: self.random, config: self.config, pepper: Some(pepper) }
 }
 
 ///|
@@ -54,7 +70,7 @@ pub fn StandardTotpPrimitive::with_config(
   self : StandardTotpPrimitive,
   config : TotpConfig,
 ) -> StandardTotpPrimitive {
-  { random: self.random, config }
+  { random: self.random, config, pepper: self.pepper }
 }
 
 ///|
@@ -63,6 +79,14 @@ pub fn StandardTotpPrimitive::config(
   self : StandardTotpPrimitive,
 ) -> TotpConfig {
   self.config
+}
+
+///|
+/// 只读访问当前恢复码哈希 pepper。
+pub fn StandardTotpPrimitive::recovery_hash_pepper(
+  self : StandardTotpPrimitive,
+) -> Bytes? {
+  self.pepper
 }
 
 // ════════ seam 实现 ════════
@@ -176,17 +200,26 @@ pub impl @core.TotpPrimitive for StandardTotpPrimitive with fn generate_recovery
 }
 
 ///|
-/// 对恢复码做不可逆哈希：`hex(sha256(code))`（64 个小写十六进制字符）。
+/// 对恢复码做不可逆哈希，返回 64 个小写十六进制字符。
 ///
-/// 只应持久化哈希结果；明文**绝不**落库。哈希是确定性纯函数，便于「按哈希查找」。
+/// - 已设 pepper（`with_recovery_hash_pepper`）：`hex(HMAC-SHA256(pepper, code))`——
+///   🔴 **推荐**。恢复码全空间约 `30^8 ≈ 6.6e11`，无盐无钥的 `sha256(code)` 在库泄露后
+///   可被一块 GPU 一次穷举、**批量**撞出所有用户；HMAC pepper 迫使攻击者逐目标持钥计算。
+///   确定性保持：同 pepper + 同码 → 同哈希，「按哈希查找」的用法不受影响。
+/// - 未设 pepper（默认）：`hex(sha256(code))`——仅为兼容保留；**生产必须设 pepper**。
+///
+/// 只应持久化哈希结果；明文**绝不**落库，pepper**绝不**与哈希同库存放。
 pub impl @core.TotpPrimitive for StandardTotpPrimitive with fn hash_recovery_codes(
   self,
   codes,
 ) {
-  let _ = self
   let out : Array[String] = []
   for code in codes {
-    out.push(hex_encode(@otp.sha256(@utf8.encode(code)[:])))
+    let digest = match self.pepper {
+      Some(pepper) => @otp.hmac(@otp.HashAlgorithm::Sha256, pepper[:], @utf8.encode(code)[:])
+      None => @otp.sha256(@utf8.encode(code)[:])
+    }
+    out.push(hex_encode(digest))
   }
   out
 }

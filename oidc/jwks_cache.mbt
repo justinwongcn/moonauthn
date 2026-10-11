@@ -17,18 +17,28 @@
 /// 字段说明：
 /// - `http` / `clock` 为注入 seam；
 /// - `ttl_seconds` 为缓存有效期（默认 1 小时）；
-/// - `cached_body` / `cached_at` 为缓存内容与抓取时刻，**私有**，不出现在 `.mbti`。
+/// - `forced_refetch_min_seconds` 为「kid 未命中强制重取」的最小间隔（默认 60 秒，
+///   防未认证路径以伪造 `kid` 放大出站请求，见 `verify_token`）；
+/// - `cached_body` / `cached_at` / `last_forced_refetch` 为实例内可变状态，**私有**，
+///   不出现在 `.mbti`。
 pub struct JwksIdTokenVerifier {
   http : &@core.HttpClient
   clock : &@core.Clock
   ttl_seconds : Int64
+  forced_refetch_min_seconds : Int64
   priv mut cached_body : String?
   priv mut cached_at : Int64
+  priv mut last_forced_refetch : Int64
 }
 
 ///|
 /// 默认 TTL：1 小时。JWKS 轮换远慢于此，取 1 小时足够新鲜又避免频繁拉取。
 let default_jwks_ttl : Int64 = 3600L
+
+///|
+/// 默认「kid 未命中强制重取」最小间隔：60 秒。轮换场景下一次重取即命中；
+/// 攻击者伪造随机 `kid` 时最多每分钟放大一次出站请求。
+let default_forced_refetch_min : Int64 = 60L
 
 ///|
 /// 构造默认验签器：`AsyncHttpClient` + `SystemClock`，默认 TTL，无缓存。
@@ -39,8 +49,10 @@ pub fn JwksIdTokenVerifier::new() -> JwksIdTokenVerifier {
     http,
     clock,
     ttl_seconds: default_jwks_ttl,
+    forced_refetch_min_seconds: default_forced_refetch_min,
     cached_body: None,
     cached_at: 0L,
+    last_forced_refetch: 0L,
   }
 }
 
@@ -54,8 +66,10 @@ pub fn JwksIdTokenVerifier::new_with_http(
     http,
     clock,
     ttl_seconds: default_jwks_ttl,
+    forced_refetch_min_seconds: default_forced_refetch_min,
     cached_body: None,
     cached_at: 0L,
+    last_forced_refetch: 0L,
   }
 }
 
@@ -75,6 +89,15 @@ pub fn JwksIdTokenVerifier::with_clock(
   clock : &@core.Clock,
 ) -> JwksIdTokenVerifier {
   { ..self, clock }
+}
+
+///|
+/// 覆盖「kid 未命中强制重取」最小间隔（秒，返回新实例）。
+pub fn JwksIdTokenVerifier::with_forced_refetch_min_seconds(
+  self : JwksIdTokenVerifier,
+  seconds : Int64,
+) -> JwksIdTokenVerifier {
+  { ..self, forced_refetch_min_seconds: seconds }
 }
 
 ///|
@@ -113,6 +136,17 @@ async fn JwksIdTokenVerifier::fetch_jwks(
     raise @core.KeyError(
       "moonauth: JWKS fetch failed with status " + resp.status.to_string(),
     )
+  }
+  // 🔴 先验证响应体确为可解析的 JWKS，**再**写缓存——否则网关返回 200 + HTML
+  // （captive portal / 反向代理故障）会把坏体缓存整整一个 TTL，且后续每个 token
+  // 都报误导性的「no JWKS key matches」。
+  try {
+    let _ = @jwk.Set::parse(resp.body[:])
+  } catch {
+    _ =>
+      raise @core.KeyError(
+        "moonauth: JWKS response is not parseable (status \{resp.status})",
+      )
   }
   self.cached_body = Some(resp.body)
   self.cached_at = self.clock.now_unix()

@@ -281,3 +281,29 @@ async test "totp: base32_encode matches RFC 4648 vectors (unpadded)" {
   let uri = primitive.otpauth_uri(secret, "bob", "GitHub", opts)
   assert_true(uri.contains("secret=" + @totp.base32_encode(secret)))
 }
+
+///|
+/// 🔴 恢复码哈希 pepper：设 pepper 后为 `hex(HMAC-SHA256(pepper, code))`——
+/// 确定性保持（同 pepper 同码 → 同哈希，按哈希查找仍成立）、与无 pepper 的裸
+/// sha256 **不同值**（泄露库后无 pepper 无法穷举）。
+async test "totp: recovery hash honours the injected pepper" {
+  let base = @totp.StandardTotpPrimitive::new()
+  let peppered = base.with_recovery_hash_pepper(@utf8.encode("server-side-secret"))
+  let codes : Array[String] = ["ABCD-EFGH", "QRST-UVWX"]
+  let plain = @core.TotpPrimitive::hash_recovery_codes(base, codes)
+  let with_pepper = @core.TotpPrimitive::hash_recovery_codes(peppered, codes)
+  for i in 0..<codes.length() {
+    // 形态不变：64 位小写十六进制。
+    @debug.assert_eq(with_pepper[i].length(), 64)
+    // 与未设 pepper 的裸 sha256 不同（同一明文码两种哈希值）。
+    assert_true(plain[i] != with_pepper[i])
+  }
+  // 确定性：同 pepper 重算哈希一致（按哈希查找语义）。
+  let again = @core.TotpPrimitive::hash_recovery_codes(peppered, codes)
+  @debug.assert_eq(again, with_pepper)
+  // 换 pepper → 哈希变（pepper 不可与哈希同库的原因：换 pepper 即全部失效）。
+  let other = base.with_recovery_hash_pepper(@utf8.encode("another-secret"))
+  assert_true(
+    @core.TotpPrimitive::hash_recovery_codes(other, codes)[0] != with_pepper[0],
+  )
+}

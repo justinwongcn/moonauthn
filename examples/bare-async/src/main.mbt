@@ -28,12 +28,49 @@ impl @core.RandomSource for FixedRandomSource with fn bytes(self, n) {
   if len == 0 {
     return Bytes::from_array(out)
   }
-  let mut i = 0
-  while i < n {
+  for i in 0..<n {
     out.push(self.data[i % len])
-    i = i + 1
   }
   Bytes::from_array(out)
+}
+
+///|
+/// `/login` 段：**服务端铸造并暂存** OAuth 临时态，返回授权 URL。
+///
+/// 🔴 `state` / `code_verifier` 传 `None` → 由库经注入的 `RandomSource`（本例为
+/// `FixedRandomSource`，故可确定性重放）现场铸造——绝不硬编码、绝不在回调时凭空重建。
+/// 生产中把 `start` 存进 session / Redis。`nonce` 固定为 `"nonce-1"` 仅为对齐
+/// `@contract` 的离线 mock 向量（真实场景 provider 会原样回写你发送的 nonce）。
+async fn google_login(
+  session : Map[String, @core.AuthStart],
+) -> @core.AuthStart raise @core.AuthError {
+  let config = @contract.google_mock_config()
+  let start = @google.begin_auth(config, {
+    state: None,
+    code_verifier: None,
+    nonce: Some("nonce-1"),
+  })
+  session[start.state] = start
+  start
+}
+
+///|
+/// `/callback` 段：按回调 `state` **一次性**取回暂存的 `AuthStart`，交库完成校验。
+async fn google_complete_from(
+  session : Map[String, @core.AuthStart],
+  code : String,
+  state : String,
+) -> @core.ExternalIdentity raise @core.AuthError {
+  let start = match session.get(state) {
+    Some(s) => s
+    None => raise @core.StateMismatch
+  }
+  session.remove(state)
+  let config = @contract.google_mock_config()
+  let callback = @core.CallbackParams::from_query_string(
+    "code=" + code + "&state=" + state,
+  )
+  @google.complete_auth(config, callback, start)
 }
 
 ///|
@@ -66,20 +103,15 @@ async fn main {
   }
   println("=== moonauth bare-async demo (offline, deterministic) ===")
 
-  // ════════ ① Google：begin → 回调 → complete → ExternalIdentity ════════
+  // ════════ ① Google：服务端铸造 state → 回调一次性取回 → complete → 身份 ════════
   // 装配点（mock HTTP + 固定时钟 + 固定 issuer）由 contract 起手函数给出。
-  let gcfg = @contract.google_mock_config()
-  let gstart = @google.begin_auth(gcfg, {
-    state: Some("st-c1"),
-    code_verifier: Some("verifier-1"),
-    nonce: Some("nonce-1"),
-  })
+  // 🔴 流程形状 = 生产形状：/login 由服务端铸造并暂存临时态；/callback 按回调携带的
+  //    state 一次性取回（取后即删，重放同一 state 直接 StateMismatch）。
+  let session : Map[String, @core.AuthStart] = Map([])
+  let gstart = google_login(session)
   println("[google] authorize url       = " + gstart.url)
-  // 浏览器回调：把 query 变成 CallbackParams（库只解析，不关心来源）。
-  let gcallback = @core.CallbackParams::from_query_string(
-    "code=auth-code-1&state=st-c1",
-  )
-  let gidentity = @google.complete_auth(gcfg, gcallback, gstart)
+  println("[google] server-minted state = " + gstart.state)
+  let gidentity = google_complete_from(session, "auth-code-1", gstart.state)
   println("[google] provider/uid        = " + gidentity.provider + " / " + gidentity.uid)
   println("[google] email               = " + gidentity.email.unwrap_or("<none>"))
   println(
@@ -88,6 +120,14 @@ async fn main {
     " / " +
     is_stable(gidentity.uid_kind).to_string(),
   )
+  // 🔴 一次性语义：同一 state 的「回调重放」会被拒绝（会话已消费）。
+  let replay = try {
+    let _ = google_complete_from(session, "auth-code-1", gstart.state)
+    "no-error"
+  } catch {
+    e => @core.auth_error_code(e)
+  }
+  println("[google] replayed state      = " + replay + " (expected state_mismatch)")
 
   // ════════ ② passkey：挑战经 seam 生成 + 一次性存储 + 固定向量验证 ════════
   let store : &@core.ChallengeStore = @store_memory.MemoryChallengeStore::new(clock)
@@ -149,6 +189,41 @@ async fn main {
     "/" +
     wres.length().to_string() +
     " passed",
+  )
+
+  // ②b 🔴 stored 流程的「取用半程」——挑战的**一次性**语义（防重放的关键）：
+  // 第一次 finish_registration_stored：挑战在场，但携带的 expected_challenge 不符
+  // → `ChallengeMismatch`（服务端比对生效）；
+  // 第二次：挑战已被 `take` 消费 → `ChallengeNotFound`（重放/复用被拒，且**不是**
+  // 存储故障——存储故障会以 AuthError raise，绝不伪装成「不存在」，见 ChallengeStore 契约）。
+  let dummy : @core.RegistrationInput = {
+    client_data_json: b"{}",
+    attestation_object: b"{}",
+    expected_challenge: "not-the-minted-challenge",
+    expected_origin: "https://example.com",
+    rp_id: "example.com",
+  }
+  let stored_first = try {
+    let _ = passkey.finish_registration_stored(challenge.key, dummy)
+    "no-error"
+  } catch {
+    e => @core.auth_error_code(e)
+  }
+  let stored_second = try {
+    let _ = passkey.finish_registration_stored(challenge.key, dummy)
+    "no-error"
+  } catch {
+    e => @core.auth_error_code(e)
+  }
+  println(
+    "[passkey] stored #1 (wrong challenge) = " +
+    stored_first +
+    " (expected challenge_mismatch)",
+  )
+  println(
+    "[passkey] stored #2 (already used)    = " +
+    stored_second +
+    " (expected challenge_not_found)",
   )
 
   // ════════ ③ TOTP：enroll → otpauth URI；RFC 6238 向量校验 ════════

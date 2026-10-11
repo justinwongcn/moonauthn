@@ -13,6 +13,12 @@
 /// 出站 HTTP。库内一切网络请求只经此接口（LIB-02 / LIB-19）。
 ///
 /// 声明为 `async fn`：真实网络 I/O 必须在调用方的 async 上下文内执行。
+///
+/// 🔴 **非 2xx 的归一责任在调用方，不在 `send`**：实现应把非 2xx 响应**原样**返回
+/// （状态码在 `HttpResponse.status`），让调用方能从响应体解出结构化的业务错误码
+/// （→ `ProviderError`），解不出再落 `HttpStatus`。`send` 只对**传输层失败**
+/// （连接 / 超时 / DNS / 解码）抛 `Network` / `ParseError`。默认实现
+/// `AsyncHttpClient` 遵循此契约。
 pub(open) trait HttpClient {
   async fn send(Self, req : HttpRequest) -> HttpResponse raise AuthError
 }

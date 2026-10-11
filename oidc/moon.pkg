@@ -9,6 +9,9 @@ import {
 
 import {
   "justinwongcn/moonauth/contract" @contract,
+  "moonbitstack/mooncrypt/sign/ecdsa" @ecdsa,
+  "moonbitstack/mooncrypt/spec" @spec,
+  "moonbitlang/core/encoding/utf8" @utf8,
   "moonbitlang/core/debug",
   "moonbitlang/async",
 } for "test"

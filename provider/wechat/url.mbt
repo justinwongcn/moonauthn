@@ -9,18 +9,19 @@
 ///|
 /// 构造微信授权 URL（严格顺序 + `#wechat_redirect` 锚点）。
 ///
-/// `redirect_uri` 按 RFC 3986 做百分号编码；其余值按微信约定原样输出。
+/// `redirect_uri` / `state` 等动态值一律百分号编码——`state` 可能由调用方自带
+///（`SuppliedSecrets.state`），不编码时其中的 `&` / `#` / 空格会截断甚至注入 query。
 pub fn wechat_authorize_url(config : WeChatConfig, state : String) -> String {
   config.authorization_endpoint +
   "?appid=" +
-  config.appid +
+  wechat_percent_encode(config.appid) +
   "&redirect_uri=" +
   wechat_percent_encode(config.redirect_uri) +
   "&response_type=code" +
   "&scope=" +
-  config.scope +
+  wechat_percent_encode(config.scope) +
   "&state=" +
-  state +
+  wechat_percent_encode(state) +
   "#wechat_redirect"
 }
 

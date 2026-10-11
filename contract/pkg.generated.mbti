@@ -9,7 +9,7 @@ import {
 // Values
 pub fn all_pass(Array[CaseResult]) -> Bool
 
-pub fn assert_all_pass(Array[CaseResult]) -> Unit
+pub fn assert_all_pass(Array[CaseResult]) -> Unit raise @core.AuthError
 
 pub fn authorize_request() -> @core.AuthorizeRequest
 
@@ -55,7 +55,11 @@ pub async fn run_google(() -> @google.GoogleConfig) -> Array[CaseResult]
 
 pub async fn run_id_token(() -> &@core.IdTokenVerifier) -> Array[CaseResult]
 
+pub async fn run_id_token_rotation(() -> &@core.IdTokenVerifier) -> Array[CaseResult]
+
 pub async fn run_oauth(() -> &@core.OAuthAuthCode) -> Array[CaseResult]
+
+pub async fn run_store(() -> &@core.ChallengeStore) -> Array[CaseResult]
 
 pub fn run_totp(() -> &@core.TotpPrimitive) -> Array[CaseResult]
 

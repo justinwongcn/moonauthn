@@ -114,6 +114,7 @@ fn t02_exp(
     nonce,
     jwks_uri: Some("mock://jwks"),
     leeway_seconds: Some(leeway),
+    algorithms: ["ES256"],
   }
 }
 

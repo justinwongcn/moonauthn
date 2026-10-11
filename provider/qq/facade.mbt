@@ -41,16 +41,18 @@ pub impl QQProvider for DefaultQQProvider with fn begin_auth(self, secrets) {
     Some(v) => v
     None => qq_random_state(self.config.random)
   }
+  // 🔴 动态值一律编码：state 可能由调用方自带（SuppliedSecrets），不编码会被
+  // `&`/`#` 截断甚至注入 query；appid/scope 同理（QQ 网关对畸形 query 静默失败）。
   let url = self.config.authorization_endpoint +
     "?response_type=code" +
     "&client_id=" +
-    self.config.appid +
+    qq_percent_encode(self.config.appid) +
     "&redirect_uri=" +
     qq_percent_encode(self.config.redirect_uri) +
     "&state=" +
-    state +
+    qq_percent_encode(state) +
     "&scope=" +
-    self.config.scope
+    qq_percent_encode(self.config.scope)
   { url, state, code_verifier: None, nonce: None }
 }
 
@@ -109,9 +111,9 @@ async fn qq_fetch_token(config : QQConfig, code : String) -> String raise @core.
   let url = config.token_endpoint +
     "?grant_type=authorization_code" +
     "&client_id=" +
-    config.appid +
+    qq_percent_encode(config.appid) +
     "&client_secret=" +
-    config.appsecret +
+    qq_percent_encode(config.appsecret) +
     "&code=" +
     qq_percent_encode(code) +
     "&redirect_uri=" +
@@ -124,7 +126,7 @@ async fn qq_fetch_token(config : QQConfig, code : String) -> String raise @core.
 ///|
 /// 取 openid（JSONP）。
 async fn qq_fetch_openid(config : QQConfig, access_token : String) -> String raise @core.AuthError {
-  let url = config.openid_endpoint + "?access_token=" + access_token
+  let url = config.openid_endpoint + "?access_token=" + qq_percent_encode(access_token)
   let body = qq_get(config, url)
   qq_parse_openid(body)
 }
@@ -138,11 +140,11 @@ async fn qq_fetch_userinfo(
 ) -> String raise @core.AuthError {
   let url = config.userinfo_endpoint +
     "?access_token=" +
-    access_token +
+    qq_percent_encode(access_token) +
     "&oauth_consumer_key=" +
-    config.appid +
+    qq_percent_encode(config.appid) +
     "&openid=" +
-    openid
+    qq_percent_encode(openid)
   qq_get(config, url)
 }
 

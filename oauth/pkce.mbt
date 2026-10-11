@@ -180,10 +180,21 @@ pub fn verify_s256(code_verifier : String, expected_challenge : String) -> Bool 
 /// 生成 `code_verifier`（RFC 7636 §4.1）：`byte_len` 字节 CSPRNG 经 base64url 编码。
 ///
 /// 🔴 随机源**只**经注入的 `RandomSource` seam 获取（LIB-01 / 共享知识 §10.4），
-/// 绝不直接引用 `getrandom`。默认 32 字节 → 43 字符，落在 RFC 允许的 43~128 区间内。
+/// 绝不直接引用 `getrandom`。默认 32 字节 → 43 字符。
+///
+/// 🔴 **RFC 7636 §4.1 护栏**：`code_verifier` 长度必须落在 **43~128 字符**
+/// （等价于 `byte_len ∈ 32..=96`）——越界即 `InvalidInput`，绝不产出不合规的
+/// verifier（过短削弱熵，过长被网关拒绝且难以排查）。
 pub fn generate_code_verifier(
   random : &@core.RandomSource,
   byte_len? : Int = 32,
 ) -> String raise @core.AuthError {
-  base64url_encode(@core.RandomSource::bytes(random, byte_len))
+  let verifier = base64url_encode(@core.RandomSource::bytes(random, byte_len))
+  let len = verifier.length()
+  if len < 43 || len > 128 {
+    raise @core.InvalidInput(
+      "moonauth: PKCE code_verifier length must be 43..=128 chars (RFC 7636), got \{len}; byte_len must be in 32..=96",
+    )
+  }
+  verifier
 }

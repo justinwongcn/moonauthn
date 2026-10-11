@@ -122,7 +122,8 @@ pub fn FeishuConfig::with_random(
 ///|
 /// 覆盖 scopes（返回新实例）。
 pub fn FeishuConfig::with_scopes(self : FeishuConfig, scopes : Array[String]) -> FeishuConfig {
-  { ..self, scopes }
+  // 拷贝：调用方后续改数组不得穿透进配置（与 `new()` 对默认值的处理一致）。
+  { ..self, scopes: scopes.copy() }
 }
 
 ///|

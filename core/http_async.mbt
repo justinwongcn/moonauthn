@@ -7,6 +7,12 @@
 //! 上下文内执行真实请求——**不再桥接 `@async.run_async_main`**。这从根上消除了
 //! 「在既有 async 上下文内嵌套 `run_async_main` → 进程 SIGABRT」的致命缺陷。
 //!
+//! 🔴 **非 2xx 不在传输层抛错**：`send` 把非 2xx 响应**原样**返回（状态码在
+//! `HttpResponse.status`），状态码归一（`HttpStatus` / 业务错误码 → `ProviderError`）
+//! 由**调用方**负责——本库全部消费方（`oauth` / 各 provider）都自带归一逻辑，且能从
+//! 响应体解出结构化的业务错误码；若传输层抢先抛 `HttpStatus`，那条更优的错误路径
+//! 将永远不可达。seam 契约同样如此约定（见 `seams_io.mbt`），自定义实现请保持一致。
+//!
 //! 所有第三方（`@http` / `@io`）异常在边界处立即 `catch` 并转换为 `AuthError`。
 
 ///|
@@ -73,9 +79,7 @@ async fn perform_http_request(req : HttpRequest) -> HttpResponse raise AuthError
   let text = data.text() catch {
     _ => raise ParseError("moonauth: failed to decode HTTP response body as text")
   }
-  if resp.code < 200 || resp.code >= 300 {
-    raise HttpStatus(resp.code, text)
-  }
+  // 非 2xx **原样返回**（归一由调用方负责，见文件头说明）。
   { status: resp.code, headers: map_response_headers(resp.headers), body: text }
 }
 

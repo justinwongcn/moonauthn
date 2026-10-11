@@ -36,9 +36,23 @@ pub async fn alipay_gateway_call(
         Some(String(s)) => s
         _ => "unknown"
       }
-      let msg = match e.get("msg") {
+      // 🔴 定位信息在 `sub_code` / `sub_msg`（如 `isv.invalid-signature`）；`code/msg`
+      // 只是粗分类。丢掉它们等于丢掉支付宝唯一有用的排障线索（网关不会提示
+      // 「是排序问题」这类原因）。
+      let sub_code = match e.get("sub_code") {
         Some(String(s)) => s
         _ => ""
+      }
+      let mut msg = match e.get("msg") {
+        Some(String(s)) => s
+        _ => ""
+      }
+      match e.get("sub_msg") {
+        Some(String(s)) => if msg == "" { msg = s } else { msg = msg + "; " + s }
+        _ => ()
+      }
+      if sub_code != "" {
+        msg = if msg == "" { sub_code } else { sub_code + ": " + msg }
       }
       raise @core.ProviderError(code, msg)
     }
@@ -176,7 +190,12 @@ fn alipay_json_to_string(value : Json) -> String {
 }
 
 ///|
-/// Unix 秒 → `yyyy-MM-dd HH:mm:ss`（UTC；支付宝要求该格式，时区影响极小）。
+/// Unix 秒 → `yyyy-MM-dd HH:mm:ss`（**UTC**）。
+///
+/// ⚠️ 待真实资质验证：官方 Java/Python SDK 发送的是**服务器本地时间**（国内即
+/// GMT+8），官方文档未明确网关对 timestamp 与服务器时间偏差的容忍窗。若真实网关
+/// 以「时间偏差」拒签，改法是先 `+8h` 再做 civil 换算（一处改动）；在此之前保持
+/// UTC 不动（见 Owner 原则：核实不到的行为不先改）。**冒烟清单项**。
 fn alipay_timestamp(unix : Int64) -> String {
   let days = unix / 86400L
   let rem = unix % 86400L

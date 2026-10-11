@@ -9,8 +9,14 @@
 //! ——微信整条链路（组 URL / 换 token / 取用户）自成一体。
 
 ///|
-/// 默认授权端点（`#wechat_redirect` 由 `url.mbt` 追加）。
-let default_authorization_endpoint : String = "https://open.weixin.qq.com/connect/oauth2/authorize"
+/// 默认授权端点（**开放平台网站应用扫码登录**，`#wechat_redirect` 由 `url.mbt` 追加）。
+///
+/// 🔴 端点与 scope **必须配套**：`connect/qrconnect`（开放平台网站应用）配
+/// `snsapi_login`（默认组合，PC 扫码登录）；`connect/oauth2/authorize`（公众号网页授权，
+/// 微信内 H5）只接受 `snsapi_base` / `snsapi_userinfo`——两套体系混用会被网关以
+/// 10016（invalid scope）拒绝。公众号场景请 `with_endpoints(..)` + `with_scope("snsapi_userinfo")`
+/// 一并切换（见 `docs/platforms/wechat.md`）。
+let default_authorization_endpoint : String = "https://open.weixin.qq.com/connect/qrconnect"
 
 ///|
 /// 默认 token 端点。

@@ -65,24 +65,28 @@ fn wechat_object(
 }
 
 ///|
-/// 若对象含 `errcode`（微信错误体）→ 归一为 `ProviderError(errcode, errmsg)`。
+/// 微信错误体 `errcode` 的统一口径：能解出数值且**非零** → `ProviderError(errcode, errmsg)`；
+/// `0` → 成功；类型不符 / 缺字段 → 成功（交由后续字段缺失兜底）。
+///
+/// 🔴 早期实现「存在 `errcode` 即报错」，`errcode: 0` 会被误判为失败——微信部分
+/// 成功体确实带 `errcode: 0`，不能依赖「成功体无 errcode」的脆弱假设。
 ///
 /// 私有：入参含第三方类型 `@json.Json`（SDK-03）。
 fn wechat_check_errcode(m : Map[String, Json]) -> Unit raise @core.AuthError {
+  let msg = match m.get("errmsg") {
+    Some(String(s)) => s
+    _ => ""
+  }
   match m.get("errcode") {
-    Some(v) => {
-      let code = match v {
-        Number(d, ..) => d.to_int().to_string()
-        String(s) => s
-        _ => "unknown"
+    Some(Number(d, ..)) =>
+      if d.to_int() != 0 {
+        raise @core.ProviderError(d.to_int().to_string(), msg)
       }
-      let msg = match m.get("errmsg") {
-        Some(String(s)) => s
-        _ => ""
-      }
-      raise @core.ProviderError(code, msg)
+    // 数字字符串形态：非 `"0"` 即业务错误。
+    Some(String(s)) => if s != "0" {
+      raise @core.ProviderError(s, msg)
     }
-    None => ()
+    _ => ()
   }
 }
 

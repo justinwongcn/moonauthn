@@ -164,13 +164,18 @@ async test "alipay: error_response is normalized to provider_error" {
     nonce: None,
   })
   let cb = @core.CallbackParams::from_query_string("auth_code=BAD&state=st-1")
-  let code = try {
+  let outcome = try {
     let _ = @alipay.complete_auth(config, cb, start)
     "no-error"
   } catch {
-    e => @core.auth_error_code(e)
+    e =>
+      // 🔴 `sub_code` 必须进入消息（它是支付宝唯一有用的排障线索，如
+      // `isv.invalid-signature`）；`msg` 为空时回退 `sub_msg`。
+      @core.auth_error_code(e) + "|" + @core.auth_error_message(e)
   }
-  @debug.assert_eq(code, "provider_error")
+  assert_true(outcome.has_prefix("provider_error|"))
+  assert_true(outcome.contains("aop.invalid-auth-token"))
+  assert_true(outcome.contains("Invalid Auth Token"))
 }
 
 ///|

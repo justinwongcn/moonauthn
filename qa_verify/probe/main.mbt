@@ -6,7 +6,7 @@
 //! - `nested_send`：**T01 修订的核心回归**。旧实现（`send` 内部桥接 `@async.run_async_main`）
 //!   在既有 async 上下文内调用会 `with_event_loop` guard 失败 → 进程 SIGABRT（exit 134）。
 //!   修订后 `send` 直接是 async，此场景应返回可捕获的 `AuthError(Network)`，进程正常退出。
-//! - `contract_fail`：验证 `assert_all_pass` 对失败用例确实 abort（非空断言）。
+//! - `contract_fail`：验证 `assert_all_pass` 对失败用例确实 raise（可捕获的 AuthError，非空断言）。
 
 ///|
 fn unreachable_request() -> @core.HttpRequest {
@@ -39,7 +39,8 @@ fn probe_nested_send() -> Unit {
 }
 
 ///|
-/// 场景 B：`assert_all_pass` 收到失败用例时是否真的终止（非零退出）。
+/// 场景 B：`assert_all_pass` 收到失败用例时确实 `raise` 且**可捕获**
+/// （错误码 `unsupported`），进程存活、exit 0。
 fn probe_contract_fail() -> Unit {
   println("CONTRACT_FAIL_START")
   let cases = [
@@ -47,8 +48,18 @@ fn probe_contract_fail() -> Unit {
     @contract.CaseResult::fail("b", "expected 200 got 500"),
   ]
   println("CONTRACT_FAIL_ALL_PASS=" + @contract.all_pass(cases).to_string())
-  @contract.assert_all_pass(cases)
-  println("CONTRACT_FAIL_REACHED_END")
+  let code = try {
+    @contract.assert_all_pass(cases)
+    "no-error"
+  } catch {
+    e => @core.auth_error_code(e)
+  }
+  println("CONTRACT_FAIL_RAISED=" + code)
+  if code == "unsupported" {
+    println("CONTRACT_FAIL_REACHED_END")
+  } else {
+    println("CONTRACT_FAIL_UNEXPECTED=" + code)
+  }
 }
 
 ///|

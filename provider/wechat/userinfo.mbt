@@ -9,6 +9,9 @@
 
 ///|
 /// 获取微信用户信息（`GET /sns/userinfo`，query 传 `access_token` + `openid`）。
+///
+/// 🔴 动态值一律百分号编码：`access_token` / `openid` 由平台签发，一旦出现
+/// `+` / `=` / `&` 等字符，不编码会让请求静默坏掉（微信不提示原因）。
 pub async fn wechat_fetch_userinfo(
   config : WeChatConfig,
   access_token : String,
@@ -16,9 +19,9 @@ pub async fn wechat_fetch_userinfo(
 ) -> String raise @core.AuthError {
   let url = config.userinfo_endpoint +
     "?access_token=" +
-    access_token +
+    wechat_percent_encode(access_token) +
     "&openid=" +
-    openid +
+    wechat_percent_encode(openid) +
     "&lang=zh_CN"
   let resp = config.http.send({
     method : @core.HttpMethod::Get,

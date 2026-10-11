@@ -31,14 +31,37 @@ async fn JwksIdTokenVerifier::verify_token(
     Some(uri) => uri
     None => raise @core.InvalidInput("moonauth: IdTokenExpectations.jwks_uri is required")
   }
+  // 🔴 fail-closed：OIDC 中 `iss` / `aud` 校验没有合法的「跳过」场景——空数组会让
+  // 「任何发行者 / 任何受众」的 token 直接通过（省略即关闭的默认方向是错的）。
+  if expect.issuers.is_empty() {
+    raise @core.InvalidInput(
+      "moonauth: IdTokenExpectations.issuers must not be empty",
+    )
+  }
+  if expect.audiences.is_empty() {
+    raise @core.InvalidInput(
+      "moonauth: IdTokenExpectations.audiences must not be empty",
+    )
+  }
   let (alg, kid) = parse_header(token)
   let alg_name = alg.name()
+  // 🔴 RFC 8725 §3.1：token 头的 `alg` 不可信，必须先过调用方白名单再继续。
+  // 空白名单 = 接受本实现支持的任一算法（RS/ES 族，最终仍绑死 JWKS 公钥）。
+  if expect.algorithms.length() > 0 && !expect.algorithms.contains(alg_name) {
+    raise @core.UnsupportedAlg(alg_name)
+  }
   let mut body = self.current_jwks(jwks_uri)
   let mut key = select_key(body, alg_name, kid)
   if key is None {
     // 轮转：缓存里找不到该 kid，强制重取一次 JWKS 再选（覆盖密钥轮换场景）。
-    body = self.fetch_jwks(jwks_uri)
-    key = select_key(body, alg_name, kid)
+    // 🔴 节流：距上次强制重取不足 `forced_refetch_min_seconds` 时不再出站——
+    // 否则未认证路径上伪造随机 `kid` 即可把每次验签放大为对 `jwks_uri` 的出站请求。
+    let now = self.clock.now_unix()
+    if now - self.last_forced_refetch >= self.forced_refetch_min_seconds {
+      self.last_forced_refetch = now
+      body = self.fetch_jwks(jwks_uri)
+      key = select_key(body, alg_name, kid)
+    }
   }
   let jwk = match key {
     Some(k) => k
@@ -60,9 +83,24 @@ async fn JwksIdTokenVerifier::verify_token(
   ) catch {
     e => raise map_rejected(e, token)
   }
+  check_exp(claims)
   check_issuer(claims, expect.issuers)
   check_nonce(claims, expect.nonce)
   build_claims(claims)
+}
+
+///|
+/// 🔴 `exp` 为 OIDC Core 的 REQUIRED 声明，客户端 MUST 校验——**缺失即拒绝**，
+/// 不得静默放行（mooncred 对缺失 `exp` 跳过过期检查，故本层补防线）。
+/// 非数值形态（字符串等）视同缺失（`num_claim` 亦不会采信）。
+fn check_exp(claims : Map[String, Json]) -> Unit raise @core.AuthError {
+  match claims.get("exp") {
+    Some(Number(_, ..)) => ()
+    _ =>
+      raise @core.ParseError(
+        "moonauth: id_token missing/invalid exp claim (REQUIRED by OIDC Core)",
+      )
+  }
 }
 
 // ════════ 头部解析与公钥选择 ════════

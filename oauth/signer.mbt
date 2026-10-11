@@ -177,6 +177,30 @@ fn int_content(buf : Bytes, tlv : Tlv) -> Bytes {
   raw[s:].to_owned()
 }
 
+///|
+/// DER OID 内容常量（tag `06` 之后的值字节）。
+///
+/// - `id-ecPublicKey` = 1.2.840.10045.2.1
+/// - `prime256v1`（P-256）= 1.2.840.10045.3.1.7
+/// - `rsaEncryption` = 1.2.840.113549.1.1.1
+let oid_ec_public_key : Bytes = [
+  0x2A, 0x86, 0x48, 0xCE, 0x3D, 0x02, 0x01,
+]
+let oid_prime256v1 : Bytes = [
+  0x2A, 0x86, 0x48, 0xCE, 0x3D, 0x03, 0x01, 0x07,
+]
+let oid_rsa_encryption : Bytes = [
+  0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x01,
+]
+
+///|
+/// 判断 TLV 是否为 OID 且其内容字节与期望完全一致。
+fn oid_is(buf : Bytes, tlv : Tlv, expected : Bytes) -> Bool {
+  tlv.tag == 0x06 &&
+  tlv.len == expected.length() &&
+  buf[tlv.start : tlv.start + tlv.len] == expected[:]
+}
+
 // ════════ EC / RSA 私有材料提取 ════════
 
 ///|
@@ -195,6 +219,20 @@ fn ec_private_scalar(der : Bytes) -> Bytes raise @core.AuthError {
   let items = der_children(der, outer)
   // PKCS#8：version INTEGER, AlgorithmIdentifier SEQUENCE, privateKey OCTET STRING
   if items.length() >= 3 && items[1].tag == 0x30 && items[2].tag == 0x04 {
+    // 🔴 曲线校验（RFC 8725 §3：不信任声明，只认已配置的算法）：AlgorithmIdentifier
+    // 必须是 `id-ecPublicKey` + `prime256v1`——喂入 P-384 等其它曲线的密钥时
+    // **拒绝**而非静默错签（对端只会看到「签名不合法」，排查成本极高）。
+    let alg = der_children(der, items[1])
+    if alg.length() < 1 || !oid_is(der, alg[0], oid_ec_public_key) {
+      raise @core.KeyError(
+        "moonauth: EC PKCS#8 AlgorithmIdentifier is not id-ecPublicKey",
+      )
+    }
+    if alg.length() < 2 || !oid_is(der, alg[1], oid_prime256v1) {
+      raise @core.KeyError(
+        "moonauth: EC PKCS#8 curve is not prime256v1 (P-256); refusing a mismatched-curve key",
+      )
+    }
     return ec_private_scalar(octet_content(der, items[2]))
   }
   // SEC1：version INTEGER, privateKey OCTET STRING
@@ -218,6 +256,13 @@ fn rsa_private_parts(der : Bytes) -> (Bytes, Bytes, Bytes) raise @core.AuthError
   let items = der_children(der, outer)
   // PKCS#8：version, AlgorithmIdentifier SEQUENCE, privateKey OCTET STRING
   if items.length() >= 3 && items[1].tag == 0x30 && items[2].tag == 0x04 {
+    // 🔴 算法校验：AlgorithmIdentifier 必须是 `rsaEncryption`（拒绝 EC 等异族密钥）。
+    let alg = der_children(der, items[1])
+    if alg.length() < 1 || !oid_is(der, alg[0], oid_rsa_encryption) {
+      raise @core.KeyError(
+        "moonauth: RSA PKCS#8 AlgorithmIdentifier is not rsaEncryption",
+      )
+    }
     return rsa_private_parts(octet_content(der, items[2]))
   }
   // PKCS#1：version, n, e, d, ...
@@ -232,8 +277,11 @@ fn rsa_private_parts(der : Bytes) -> (Bytes, Bytes, Bytes) raise @core.AuthError
 }
 
 ///|
-/// 把可能带前导零 / 宽度异常的标量归一为定长 32 字节。
-fn normalize_scalar(raw : Bytes) -> Bytes {
+/// 把可能带前导零 / 宽度不足的标量归一为定长 32 字节。
+///
+/// 宽度**超出** 32 字节 → `KeyError`（非 P-256 密钥，绝不截断）。签名随调用链
+/// 传播 `AuthError`。
+fn normalize_scalar(raw : Bytes) -> Bytes raise @core.AuthError {
   let mut s = 0
   while s + 1 < raw.length() && raw[s] == b'\x00' {
     s = s + 1
@@ -243,18 +291,19 @@ fn normalize_scalar(raw : Bytes) -> Bytes {
   if width == 32 {
     return stripped.to_owned()
   }
-  let out : Array[Byte] = []
+  // 🔴 超宽标量 = 不是 P-256 密钥（如 P-384 的 48 字节标量）——**拒绝**，
+  // 绝不截断成低 32 字节（截断结果大概率仍是合法标量，会静默错签）。
   if width > 32 {
-    for i in 0..<32 {
-      out.push(stripped[width - 32 + i])
-    }
-  } else {
-    for _ in 0..<(32 - width) {
-      out.push(b'\x00')
-    }
-    for b in stripped {
-      out.push(b)
-    }
+    raise @core.KeyError(
+      "moonauth: EC private scalar is wider than 32 bytes; refusing a non-P-256 key",
+    )
+  }
+  let out : Array[Byte] = []
+  for _ in 0..<(32 - width) {
+    out.push(b'\x00')
+  }
+  for b in stripped {
+    out.push(b)
   }
   Bytes::from_array(out)
 }

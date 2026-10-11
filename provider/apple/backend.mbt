@@ -115,6 +115,7 @@ pub impl AppleProvider for DefaultAppleProvider with fn complete_auth(
     nonce: expected.nonce,
     jwks_uri: Some(self.config.jwks_uri),
     leeway_seconds: Some(60),
+    algorithms: ["RS256"],
   })
   let mut identity = apple_identity(claims)
   // 姓名只在首次授权返回：能从 `user` 解析就补上（绝不缓存）。

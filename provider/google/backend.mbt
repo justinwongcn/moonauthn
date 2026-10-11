@@ -132,6 +132,7 @@ pub impl GoogleProvider for DefaultGoogleProvider with fn complete_auth(
     nonce: expected.nonce,
     jwks_uri: Some(self.config.jwks_uri),
     leeway_seconds: Some(60),
+    algorithms: ["RS256"],
   })
   google_identity(claims)
 }

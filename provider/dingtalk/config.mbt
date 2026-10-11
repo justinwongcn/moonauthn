@@ -104,7 +104,8 @@ pub fn DingTalkConfig::with_scopes(
   self : DingTalkConfig,
   scopes : Array[String],
 ) -> DingTalkConfig {
-  { ..self, scopes }
+  // 拷贝：调用方后续改数组不得穿透进配置（与 `new()` 对默认值的处理一致）。
+  { ..self, scopes: scopes.copy() }
 }
 
 ///|

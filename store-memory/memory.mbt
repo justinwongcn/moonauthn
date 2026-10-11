@@ -35,6 +35,13 @@ const SWEEP_INTERVAL : Int = 16
 ///
 /// 内部用两张标准 `Map` 分别保存「值」与「绝对过期时刻（Unix 秒）」，
 /// 因此公开定义不依赖任何私有类型。`puts_since_sweep` 用于摊销式机会清扫。
+///
+/// 🔴 字段为**内部实现**：外部读取仅用于观测 / 白盒测试；经 `values` / `expiries`
+/// 拿到 `Map` 引用后**写入属未定义行为**（会破坏「两表同步」不变量）。
+///
+/// 🔴 并发假设记档：各方法体内**无挂起点**（纯 Map 操作），在当前协作式单线程
+/// async runtime 下天然原子、无竞态；若未来 runtime 引入真并行，两张 `Map` 需
+/// 外部同步（实现侧职责）。
 pub struct MemoryChallengeStore {
   clock : &@core.Clock
   values : Map[String, String]

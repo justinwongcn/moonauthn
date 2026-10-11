@@ -6,3 +6,9 @@ import {
   "moonbitlang/core/debug",
   "moonbitlang/async",
 } for "wbtest"
+
+import {
+  "justinwongcn/moonauth/store-memory" @store_memory,
+  "justinwongcn/moonauth/contract" @contract,
+  "moonbitlang/async",
+} for "test"
