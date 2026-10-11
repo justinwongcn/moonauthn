@@ -43,7 +43,6 @@ pub struct DingTalkConfig {
 pub fn DingTalkConfig::new(String, String, String) -> Self
 pub fn DingTalkConfig::with_clock(Self, &@core.Clock) -> Self
 pub fn DingTalkConfig::with_endpoints(Self, String, String, String) -> Self
-pub fn DingTalkConfig::with_global(Self) -> Self
 pub fn DingTalkConfig::with_http(Self, &@core.HttpClient) -> Self
 pub fn DingTalkConfig::with_random(Self, &@core.RandomSource) -> Self
 pub fn DingTalkConfig::with_scopes(Self, Array[String]) -> Self

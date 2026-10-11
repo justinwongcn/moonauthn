@@ -1,7 +1,10 @@
-//! moonauth / provider/dingtalk —— 黑盒测试（facade / 归一化 / 国际版预设 / SDK-01 组合）。
+//! moonauth / provider/dingtalk —— 黑盒测试（facade / 归一化 / SDK-01 组合）。
 //!
 //! 全部**离线、确定性**：HTTP 走 `@contract.MockHttpClient`，时钟走 `@contract.FixedClock`，
 //! 随机走固定重放的 `FixedRandomSource`，零真实网络。
+//!
+//! 🔴 **无国际站用例**：国际站端点未从官方文档核实，库不内置预设（诚实优先），
+//! 故无从断言；`with_endpoints` 的覆盖能力由本文件的 mock 端点改写路径间接覆盖。
 
 // ════════ 测试辅助 ════════
 
@@ -88,24 +91,6 @@ async test "dingtalk(A): default config assembles the CN authorization URL" {
   @debug.assert_eq(start.code_verifier, Some("verifier-1"))
   // 钉钉无 OIDC id_token，无 nonce 语义。
   @debug.assert_eq(start.nonce, None)
-}
-
-///|
-/// 🅰 `with_global()` 一键切**国际站**（`*.dingtalk.io`）端点预设，路径同构。
-async test "dingtalk(A): with_global switches to the dingtalk.io preset" {
-  let config = @dingtalk.DingTalkConfig::new(
-    "client-1",
-    "secret-1",
-    "https://app.example/cb",
-  ).with_global()
-  let secrets : @core.SuppliedSecrets = {
-    state: Some("st-123"),
-    code_verifier: Some("verifier-1"),
-    nonce: None,
-  }
-  let start = @dingtalk.begin_auth(config, secrets)
-  assert_true(start.url.has_prefix("https://login.dingtalk.io/oauth2/auth?"))
-  assert_true(start.url.contains("client_id=client-1"))
 }
 
 // ════════ 组合 B：注入能力 seam ════════

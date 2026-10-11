@@ -16,8 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **四个新平台 provider**：`provider/github`、`provider/discord`（标准 OAuth2 + PKCE，骑 `@oauth` seam）、
   `provider/dingtalk`、`provider/feishu`（非标准协议自拼：钉钉 token 端点 JSON 体 + 驼峰字段 +
   `x-acs-dingtalk-access-token` 鉴权头；飞书 v2 JSON 体 + `{code,msg,data}` 信封壳）。
-  两家国际版为**端点预设**：`DingTalkConfig::with_global()`（`*.dingtalk.io`）、
-  `FeishuConfig::with_lark()`（`*.larksuite.com`），协议同构、凭据隔离，`with_endpoints` 为逃生门。
+  飞书国际版为**端点预设**：`FeishuConfig::with_lark()`（`*.larksuite.com`，已按官方文档核实）；
+  **钉钉国际站端点未能从官方文档核实，库不内置预设**（诚实优先，不实现未经核实的功能；
+  国际站应用用 `with_endpoints` 配置，见平台文档）。
 - **钉钉 / 飞书 UID 语义**：`unionId` / `union_id` 优先（`Stable`），仅 `openId` / `open_id` 时
   `Degraded`（微信 unionid 同款先例）。
 - `core/provider_descriptor` 登记四行（supports_pkce 全 true、supports_id_token 全 false）；

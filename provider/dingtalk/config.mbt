@@ -5,10 +5,11 @@
 //!   与 OAuth2 标准的 form POST 不同 → **换 token 自实现**，不骑 `@oauth` seam 的
 //!   `exchange`；授权 URL 组装仍是标准形态（client_id / redirect_uri / response_type /
 //!   scope / state / PKCE），**复用** seam 的 `begin`（含 percent-encode 与字典序保证）；
-//! - 取用户信息用**自定义头** `x-acs-dingtalk-access-token`（不是 `Authorization`）；
-//! - **国内站与国际站**：协议报文完全同构，只有域名不同。默认国内站
-//!   （`*.dingtalk.com`），`with_global()` 一键切国际站（`*.dingtalk.io`）；
-//!   两套凭据不互通，应用在哪个站创建就用哪套端点。
+//! - 取用户信息用**自定义头** `x-acs-dingtalk-access-token`（不是 `Authorization`）。
+//!
+//! 🔴 **国际站不内置预设**：钉钉国际站（`*.dingtalk.io`）的 OAuth2 具体端点路径
+//! 未能从官方文档核实（截至 2026-10），按「诚实优先」原则**不做推测实现**——
+//! 国际站应用请以官方文档给出的端点为准，用 `with_endpoints` 配置。
 //!
 //! 🔴 本包不 import 其余任何 provider（LIB-20 隔离）。
 
@@ -23,18 +24,6 @@ let default_token_endpoint : String = "https://api.dingtalk.com/v1.0/oauth2/user
 ///|
 /// 默认用户信息端点（国内站）。
 let default_user_info_endpoint : String = "https://api.dingtalk.com/v1.0/contact/users/me"
-
-///|
-/// 国际站授权端点（`with_global()` 预设用；路径与国内站同构）。
-let global_authorization_endpoint : String = "https://login.dingtalk.io/oauth2/auth"
-
-///|
-/// 国际站 token 端点（`with_global()` 预设用）。
-let global_token_endpoint : String = "https://api.dingtalk.io/v1.0/oauth2/userAccessToken"
-
-///|
-/// 国际站用户信息端点（`with_global()` 预设用）。
-let global_user_info_endpoint : String = "https://api.dingtalk.io/v1.0/contact/users/me"
 
 ///|
 /// 默认 scopes（钉钉 v2 授权的基础 scope）。
@@ -83,20 +72,6 @@ pub fn DingTalkConfig::new(
 }
 
 ///|
-/// 切换到**国际站**（DingTalk Global，`*.dingtalk.io`）端点预设（返回新实例）。
-///
-/// 🔴 两套部署的凭据体系完全隔离：国际站应用必须用国际站端点，反之亦然。
-/// 特殊部署（如专属域名）用 `with_endpoints` 覆盖。
-pub fn DingTalkConfig::with_global(self : DingTalkConfig) -> DingTalkConfig {
-  {
-    ..self,
-    authorization_endpoint: global_authorization_endpoint,
-    token_endpoint: global_token_endpoint,
-    user_info_endpoint: global_user_info_endpoint,
-  }
-}
-
-///|
 /// 注入出站 HTTP 实现（返回新实例）。
 pub fn DingTalkConfig::with_http(
   self : DingTalkConfig,
@@ -133,7 +108,8 @@ pub fn DingTalkConfig::with_scopes(
 }
 
 ///|
-/// 覆盖三类端点（返回新实例）——测试用固定向量 / 专属域名部署时使用。
+/// 覆盖三类端点（返回新实例）——测试用固定向量 / **国际站与专属域名部署**时使用
+///（国际站端点见 `config.mbt` 头注释的「诚实优先」说明）。
 pub fn DingTalkConfig::with_endpoints(
   self : DingTalkConfig,
   authorization_endpoint : String,

@@ -75,8 +75,11 @@ async test "ext/discord: authorization URL is the official endpoint with PKCE" {
 }
 
 ///|
-/// §1.3 dingtalk：国内站端点 + PKCE；`with_global()` 切国际站 `dingtalk.io`。
-async test "ext/dingtalk: CN default and dingtalk.io global preset" {
+/// §1.3 dingtalk：国内站端点 + PKCE。
+///
+/// 🔴 国际站不内置预设（OAuth2 端点未从官方文档核实，诚实优先不做推测实现），
+/// 故无国际站断言；国际站部署用 `with_endpoints` 自行配置。
+async test "ext/dingtalk: CN default endpoint with PKCE" {
   let secrets : @core.SuppliedSecrets = {
     state: Some("st"),
     code_verifier: Some("verifier-1"),
@@ -86,10 +89,6 @@ async test "ext/dingtalk: CN default and dingtalk.io global preset" {
   let cn_start = @dingtalk.begin_auth(cn, secrets)
   assert_true(cn_start.url.has_prefix("https://login.dingtalk.com/oauth2/auth?"))
   assert_true(cn_start.url.contains("code_challenge_method=S256"))
-  let global = @dingtalk.DingTalkConfig::new("cid", "csec", "https://app.example/cb").with_global()
-  let global_start = @dingtalk.begin_auth(global, secrets)
-  assert_true(global_start.url.has_prefix("https://login.dingtalk.io/oauth2/auth?"))
-  assert_true(global_start.url.contains("client_id=cid"))
 }
 
 ///|

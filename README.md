@@ -131,7 +131,7 @@ println(identity.uid)          // = Google 的 sub
 | `passkey` | WebAuthn 验签（`StandardWebAuthnVerifier`）+ `PasskeyService`（challenge 一次性 + TTL） |
 | `totp` | TOTP / 恢复码（`StandardTotpPrimitive` + `TotpService`） |
 | `store-memory` | `ChallengeStore` 内存实现（`MemoryChallengeStore`） |
-| `provider/google` `provider/apple` `provider/x` `provider/wechat` `provider/qq` `provider/alipay` `provider/github` `provider/discord` `provider/dingtalk` `provider/feishu` | 十个平台的 facade（`begin_auth` / `complete_auth` + 归一化），每个**相互隔离**；钉钉 / 飞书内置**国内与国际版**端点预设（`with_global()` / `with_lark()`） |
+| `provider/google` `provider/apple` `provider/x` `provider/wechat` `provider/qq` `provider/alipay` `provider/github` `provider/discord` `provider/dingtalk` `provider/feishu` | 十个平台的 facade（`begin_auth` / `complete_auth` + 归一化），每个**相互隔离**；飞书内置 **Lark 国际版**端点预设（`with_lark()`，已按官方文档核实）；钉钉国际站端点**未能核实故不内置**（用 `with_endpoints` 配置，见其平台文档） |
 | `contract` | 参数化契约测试骨架（SDK-04）+ 固定测试向量，**下游可复用** |
 
 ## 示例
