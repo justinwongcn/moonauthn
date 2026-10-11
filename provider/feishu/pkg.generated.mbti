@@ -1,0 +1,57 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "justinwongcn/moonauth/provider/feishu"
+
+import {
+  "justinwongcn/moonauth/core",
+}
+
+// Values
+pub async fn begin_auth(FeishuConfig, @core.SuppliedSecrets) -> @core.AuthStart raise @core.AuthError
+
+pub async fn complete_auth(FeishuConfig, @core.CallbackParams, @core.AuthStart) -> @core.ExternalIdentity raise @core.AuthError
+
+pub fn feishu_identity(String) -> @core.ExternalIdentity raise @core.AuthError
+
+pub fn feishu_parse_token(String) -> String raise @core.AuthError
+
+// Errors
+
+// Types and methods
+pub struct DefaultFeishuProvider {
+  config : FeishuConfig
+  oauth : &@core.OAuthAuthCode
+}
+pub async fn DefaultFeishuProvider::begin_auth(Self, @core.SuppliedSecrets) -> @core.AuthStart raise @core.AuthError
+pub async fn DefaultFeishuProvider::complete_auth(Self, @core.CallbackParams, @core.AuthStart) -> @core.ExternalIdentity raise @core.AuthError
+pub fn DefaultFeishuProvider::config(Self) -> FeishuConfig
+pub fn DefaultFeishuProvider::new(FeishuConfig) -> Self
+pub fn DefaultFeishuProvider::with_oauth(Self, &@core.OAuthAuthCode) -> Self
+pub impl FeishuProvider for DefaultFeishuProvider
+
+pub struct FeishuConfig {
+  app_id : String
+  app_secret : String
+  redirect_uri : String
+  scopes : Array[String]
+  authorization_endpoint : String
+  token_endpoint : String
+  user_info_endpoint : String
+  http : &@core.HttpClient
+  clock : &@core.Clock
+  random : &@core.RandomSource
+}
+pub fn FeishuConfig::new(String, String, String) -> Self
+pub fn FeishuConfig::with_clock(Self, &@core.Clock) -> Self
+pub fn FeishuConfig::with_endpoints(Self, String, String, String) -> Self
+pub fn FeishuConfig::with_http(Self, &@core.HttpClient) -> Self
+pub fn FeishuConfig::with_lark(Self) -> Self
+pub fn FeishuConfig::with_random(Self, &@core.RandomSource) -> Self
+pub fn FeishuConfig::with_scopes(Self, Array[String]) -> Self
+
+// Type aliases
+
+// Traits
+pub(open) trait FeishuProvider {
+  async fn begin_auth(Self, @core.SuppliedSecrets) -> @core.AuthStart raise @core.AuthError
+  async fn complete_auth(Self, @core.CallbackParams, @core.AuthStart) -> @core.ExternalIdentity raise @core.AuthError
+}
