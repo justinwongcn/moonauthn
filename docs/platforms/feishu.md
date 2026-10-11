@@ -78,9 +78,11 @@ let identity = @feishu.complete_auth(config, callback, start)
   均落 `ProviderError`。
 - 🔴 **token 端点 v2 → v3 迁移**：官方已宣布令牌端点将由
   `https://open.feishu.cn/open-apis/authen/v2/oauth/token` 迁往
-  `https://accounts.feishu.cn/oauth/v3/token`（v2 在淘汰路径）。当前库默认仍为 v2
-  （实测可用）；端点可用 `with_endpoints` 覆盖，接入前请以官方文档核对最新端点与
-  响应形态。
+  `https://accounts.feishu.cn/oauth/v3/token`（v2 在淘汰路径）。**L1 实测
+  （2026-10-12，零凭据探测）**：v3 端点已上线，对无效凭证返回与 v2 **完全相同**的
+  错误形状（HTTP 400 + `{"error":"invalid_grant","error_description":"...","code":20003}`）。
+  当前库默认仍为 v2；**默认端点迁 v3 待 L2（真实回流）核实成功响应形状后进行**，
+  期间可用 `with_endpoints` 显式切换。
 - **权限未发布 = 拿不到字段**：`user_info` 返回的字段受应用**权限 + 版本发布**控制，
   未开通 / 未发布时字段缺失（不是报错）——`email` 缺失即 `email = None`。
 - **PKCE**：飞书新版 OAuth 支持 `code_challenge`（S256），库默认全程启用。

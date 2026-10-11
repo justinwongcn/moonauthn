@@ -36,6 +36,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **oauth：token 响应携带 `error` 字段时优先归一为 `ProviderError`**（RFC 6749 §5.2）。
+  L1 实测（2026-10-12，零凭据探测）确认 GitHub 对「有效 client_id + 无效授权码」返回
+  **HTTP 200 + 错误体**（`{"error":"bad_verification_code",...}`）——此前会降级为
+  信息量更低的 `ParseError`。JSON/form 两形态均覆盖。
 - 🔴 **feishu：token 响应按真实 v2 形态解析**（信封优先）。真实
   `POST /authen/v2/oauth/token` 成功响应是 `{code,msg,data:{access_token,...}}`
   信封壳（与官方 Go/Node SDK 模型一致）；此前按顶层平铺解析，默认配置对真实网关

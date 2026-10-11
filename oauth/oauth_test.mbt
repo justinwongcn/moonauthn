@@ -697,3 +697,23 @@ async test "signer: RSA PKCS#8 with non-RSA AlgorithmIdentifier is refused" {
   }
   @debug.assert_eq(code, "key_error")
 }
+
+///|
+/// 🔴 L1 实测形状（GitHub）：**HTTP 200 + 错误体**（`error`/`error_description`）——
+/// RFC 6749 §5.2 的 `error` 字段优先于「`access_token` 缺失」，归一为
+/// `provider_error` 而非 `parse_error`。
+async test "standard oauth: 200 with an error body is provider_error (GitHub-style)" {
+  let client = @contract.MockHttpClient::new([
+    @contract.ok_response(
+      "{\"error\":\"bad_verification_code\",\"error_description\":\"The code passed is incorrect or expired.\"}",
+    ),
+  ])
+  let oauth = @oauth.StandardOAuthAuthCode::new().with_http(client)
+  let code = try {
+    let _ = oauth.exchange(@contract.token_exchange_request())
+    "no-error"
+  } catch {
+    e => @core.auth_error_code(e)
+  }
+  @debug.assert_eq(code, "provider_error")
+}

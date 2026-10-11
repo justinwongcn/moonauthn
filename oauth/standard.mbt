@@ -184,9 +184,20 @@ fn map_token_error(resp : @core.HttpResponse) -> @core.AuthError {
 }
 
 ///|
-/// 解析成功响应体为 `TokenSet`。`access_token` 缺失即 `ParseError`。
+/// 解析成功响应体为 `TokenSet`。
+///
+/// 🔴 **L1 实测（2026-10-12，GitHub）**：部分网关对「凭证有效但授权码无效」返回
+/// **HTTP 200 + 错误体**（GitHub 的 `{"error":"bad_verification_code",...}`），而非
+/// RFC 6749 §5.2 惯例的非 2xx。按 §5.2「带 `error` 字段即错误响应」（成功响应绝不
+/// 携带 `error`），在取 `access_token` 之前先检查 `error` 字段，归一为
+/// `ProviderError`——否则错误会被降级成信息量更低的 `ParseError`。
 fn parse_token_set(body : String) -> @core.TokenSet raise @core.AuthError {
   let fields = token_fields(body)
+  match fields.get("error") {
+    Some(code) =>
+      raise @core.ProviderError(code, fields.get("error_description").unwrap_or(""))
+    None => ()
+  }
   let access = match fields.get("access_token") {
     Some(v) => v
     None => raise @core.ParseError("moonauth: token response missing access_token")
