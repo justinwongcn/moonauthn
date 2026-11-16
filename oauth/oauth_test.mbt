@@ -717,3 +717,36 @@ async test "standard oauth: 200 with an error body is provider_error (GitHub-sty
   }
   @debug.assert_eq(code, "provider_error")
 }
+
+///|
+/// 🔴 溢出防护（JEV 扫描第 1 轮复核确认）：异常大的 `expires_in` 必须归一为
+/// `None`（「未知」），不得静默回绕/截断出看似合法的错误值。
+async test "standard oauth: oversized expires_in is None, not a truncated value" {
+  let client = @contract.MockHttpClient::new([
+    @contract.ok_response(
+      "{\"access_token\":\"at-ovf\",\"expires_in\":99999999999999999999}",
+    ),
+  ])
+  let oauth = @oauth.StandardOAuthAuthCode::new().with_http(client)
+  let token = oauth.exchange(@contract.token_exchange_request())
+  @debug.assert_eq(token.expires_in, None)
+}
+
+///|
+/// 略超出 `Int`（Int32）范围的 `expires_in`（如 2^31）同样归一为 `None`；
+/// 正常值不受影响（ASCII 数字形态与 JSON 数值形态都覆盖）。
+async test "standard oauth: expires_in beyond Int32 range is None, normal values kept" {
+  let client = @contract.MockHttpClient::new([
+    @contract.ok_response(
+      "{\"access_token\":\"at-big\",\"expires_in\":2147483648}",
+    ),
+    @contract.ok_response(
+      "access_token=at-txt&expires_in= 3600",
+    ),
+  ])
+  let oauth = @oauth.StandardOAuthAuthCode::new().with_http(client)
+  let token_big = oauth.exchange(@contract.token_exchange_request())
+  @debug.assert_eq(token_big.expires_in, None)
+  let token_txt = oauth.exchange(@contract.token_exchange_request())
+  @debug.assert_eq(token_txt.expires_in, Some(3600))
+}

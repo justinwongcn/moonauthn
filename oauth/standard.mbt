@@ -259,6 +259,11 @@ fn json_to_string(value : Json) -> String {
 
 ///|
 /// 字符串 → `Int?`：容忍前导空白，遇非数字即停；无任何数字则 `None`。
+///
+/// 🔴 **溢出防护**（JEV 扫描第 1 轮人工复核确认）：累计超出 `Int64`、或结果超出
+/// `Int`（Int32）可表示范围时返回 `None`（「未知」）——此前会**静默回绕/截断**
+/// 出一个看似合法的错误值（如平台返回 20 位 `expires_in` 时）。`expires_in` 是
+/// 平台给的建议时效，异常大值只能来自异常响应，宁可丢弃不可捏造。
 fn parse_int_opt(value : String?) -> Int? {
   match value {
     None => None
@@ -269,20 +274,33 @@ fn parse_int_opt(value : String?) -> Int? {
       while i < n && (bytes[i] == b' ' || bytes[i] == b'\t') {
         i = i + 1
       }
+      let max_i64 = 9223372036854775807L
+      let int32_max = 2147483647L
       let mut acc : Int64 = 0L
       let mut digits = 0
+      let mut overflow = false
       let mut done = false
       while i < n && !done {
         let c = bytes[i].to_int()
         if c >= 48 && c <= 57 {
-          acc = acc * 10L + (c - 48).to_int64()
-          digits = digits + 1
-          i = i + 1
+          let d = (c - 48).to_int64()
+          if acc > (max_i64 - d) / 10L {
+            // Int64 累加将回绕——不产出任何值
+            overflow = true
+            done = true
+          } else {
+            acc = acc * 10L + d
+            digits = digits + 1
+            i = i + 1
+          }
         } else {
           done = true
         }
       }
-      if digits == 0 {
+      if digits == 0 || overflow {
+        None
+      } else if acc > int32_max {
+        // 超出 `Int`（Int32）可表示范围：返回「未知」而非静默截断
         None
       } else {
         Some(acc.to_int())

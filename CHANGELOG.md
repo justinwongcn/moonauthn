@@ -42,6 +42,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **oauth：`expires_in` 异常大值归一为 `None` 而非静默截断**（JEV 扫描第 1 轮确认）。
+  `parse_int_opt` 此前对 Int64 累加无溢出检查、且 `Int64→Int32` 静默截断——平台返回
+  20 位数字或 ≥2^31 的 `expires_in` 时会产出看似合法的错误值；现超出可表示范围一律
+  归一为 `None`（「未知」），由调用方按未知时效保守处理。正常值不受影响。
 - **oauth：token 响应携带 `error` 字段时优先归一为 `ProviderError`**（RFC 6749 §5.2）。
   L1 实测（2026-10-12，零凭据探测）确认 GitHub 对「有效 client_id + 无效授权码」返回
   **HTTP 200 + 错误体**（`{"error":"bad_verification_code",...}`）——此前会降级为
