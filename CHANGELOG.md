@@ -81,6 +81,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **CI：依赖兼容引导层 `ci/bootstrap.sh` + `ci/migrate_try.py`**（check.sh 第 0 步，幂等）。
+  moon 0.1.20261104（官方 latest）移除 `try?` 语法并更改 manifest 格式要求，而
+  `mizchi/experimental_crypto@0.0.2`（最新且唯一版本）与 `moonbitlang/regexp@0.3.5` 均未跟进
+  ——本层对 `.mooncakes` 缓存做确定性迁移：旧格式 manifest → `moon.mod`（官方 `moon fmt` 路径）、
+  `try? EXPR` → `try Ok(EXPR) catch { e => Err(e) }`（官方诊断 [3002] 给出的语义保持替换，词边界
+  检测 + 注释跳过 + 跨行括号配对）。全新缓存多轮自愈，**从零复现已验证**（删除 `.mooncakes` /
+  `_build` 后完整 check.sh 7/7 绿）。上游发修复版后 bump 依赖并删除对应迁移项。
 - **wechat：小程序登录 `code2Session`**（2026-11-17 官方文档核实）。`wechat_code2_session(config, js_code)`
   → `WeChatCode2Session { identity, session_key }`：身份与网站链路**同一归一口径**
   （`provider = "wechat"`，`unionid` 优先 `Stable` → `openid` 兜底 `Degraded`，同一开放平台

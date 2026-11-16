@@ -6,6 +6,8 @@
 # 从而保证「本机跑」与「CI 跑」行为一致。
 #
 # 断言：
+#   0) 依赖引导（ci/bootstrap.sh）：在最新工具链下对 .mooncakes 缓存做幂等兼容性迁移
+#      （旧格式 manifest + `try?` 语法，见脚本头注释）——全新缓存的多轮自愈也在这里
 #   1) native 与 js 双 target 编译 —— 任一失败即红
 #   2) native 与 js 双 target 全量测试 —— 任一失败即红（含 contract 参数化契约）
 #   3) examples/minimal-google 的 LIB-20 隔离：只 import provider/google，且能独立跑通
@@ -27,6 +29,10 @@ red()   { printf '\033[31m%s\033[0m\n' "$*"; }
 green() { printf '\033[32m%s\033[0m\n' "$*"; }
 step()  { printf '\n\033[1m==> %s\033[0m\n' "$*"; }
 fail()  { red "CI FAILED: $*"; exit 1; }
+
+step "0/7  依赖引导（最新工具链兼容性，幂等）"
+bash "${SCRIPT_DIR}/bootstrap.sh"
+green "deps bootstrap OK"
 
 step "1/7  build native"
 moon build --target native
