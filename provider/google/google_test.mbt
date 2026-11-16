@@ -293,3 +293,29 @@ async test "google: default secrets come from the injected RandomSource" {
   @debug.assert_eq(a.code_verifier, b.code_verifier)
   @debug.assert_eq(a.nonce, b.nonce)
 }
+
+// ════════ 回调错误参数（用户拒绝授权）════════
+
+///|
+/// Google 失败回调以 query 回传 `error` / `error_description`——必须归一为
+/// `provider_error`（可定位的平台语义），而不是误报 `missing_param`。
+async test "google: callback error param is normalized to provider_error" {
+  let config = google_fixed_config()
+  let start = @google.begin_auth(config, {
+    state: Some("st-123"),
+    code_verifier: Some("verifier-1"),
+    nonce: Some("nonce-1"),
+  })
+  let callback = @core.CallbackParams::from_query_string(
+    "error=access_denied&error_description=user%20denied&state=st-123",
+  )
+  let outcome = try {
+    let _ = @google.complete_auth(config, callback, start)
+    "no-error"
+  } catch {
+    e => @core.auth_error_code(e) + "|" + @core.auth_error_message(e)
+  }
+  assert_true(outcome.has_prefix("provider_error|"))
+  assert_true(outcome.contains("access_denied"))
+  assert_true(outcome.contains("user denied"))
+}

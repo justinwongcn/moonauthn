@@ -39,8 +39,9 @@ let identity = @github.complete_auth(config, callback, start)
 `avatar = avatar_url`；其余字段进 `extra`。
 
 邮箱语义：`/user.email` 是公开邮箱（直接采用，`email_verified = false`）；
-为 `null`（私有邮箱）时库自动补拉 `/user/emails` 取首个 `primary && verified` 项
-（此时 `email_verified = true`）。
+为 `null`（私有邮箱）时库自动补拉 `/user/emails`，选择规则：**首个 `primary && verified`
+优先；没有主邮箱时回退首个 `verified=true`；只有未验证邮箱时不采用**（2026-11-17
+按调研核对补齐回退档——GitHub 私密邮箱场景下列表常无 primary 项）。
 
 ## 4. 🔴 踩坑点
 
@@ -54,8 +55,9 @@ let identity = @github.complete_auth(config, callback, start)
   **增强失败不失败登录**（`uid` 已成立，邮箱记 `None`）——这是有意取舍，勿在本库外重试。
 - **PKCE**：GitHub 自 2025-07 起官方支持（OAuth App 与 GitHub App 均可），库默认
   全程启用 S256；`code_challenge_method` 无需自配。
-- **回调参数**：GitHub 回调只给 `code` + `state`（无 `nonce`），用
-  `@core.CallbackParams::from_query_string` 解析即可。
+- **回调参数**：成功回调给 `code` + `state`（无 `nonce`）；**失败回调**给
+  `error` / `error_description` / `error_uri` / `state`。库在 state 校验通过后读取错误参数，
+  归一为 `ProviderError`（`error_uri` 并入消息）——用户拒绝授权不会误报成 `missing_param`。
 - **`allow_signup`**：授权 URL 的可选参数，经 `AuthorizeRequest.extra` 即可传
   （本库 facade 默认不带；需要时走 `GitHubProvider` trait 自定义 `begin_auth`）。
 

@@ -72,8 +72,10 @@ pub impl GitHubProvider for DefaultGitHubProvider with fn begin_auth(self, secre
 ///|
 /// 实现 `GitHubProvider`：`complete_auth`。
 ///
-/// 流程：校验 `state` → 换 token → `GET /user` → 归一身份。`/user.email` 为
-/// `null`（私有邮箱）时补拉一次 `/user/emails`（可选增强，见 `user_info.mbt`）。
+/// 顺序契约：校验 `state` → 回调错误参数（GitHub 失败回调携带
+/// `error` / `error_description` / `error_uri`）→ 换 token → `GET /user` →
+/// 归一身份。`/user.email` 为 `null`（私有邮箱）时补拉一次 `/user/emails`
+/// （可选增强，见 `user_info.mbt`）。
 pub impl GitHubProvider for DefaultGitHubProvider with fn complete_auth(
   self,
   callback,
@@ -85,6 +87,10 @@ pub impl GitHubProvider for DefaultGitHubProvider with fn complete_auth(
   }
   if state != expected.state {
     raise @core.StateMismatch
+  }
+  match callback.provider_error() {
+    Some(e) => raise e
+    None => ()
   }
   let code = match callback.get("code") {
     Some(c) => c

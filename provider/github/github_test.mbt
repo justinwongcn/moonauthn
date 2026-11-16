@@ -380,3 +380,54 @@ async test "github: default secrets come from the injected RandomSource" {
   @debug.assert_eq(a.state, b.state)
   @debug.assert_eq(a.code_verifier, b.code_verifier)
 }
+
+// ════════ 回调错误参数 + 邮箱回退档 ════════
+
+///|
+/// GitHub 失败回调携带 `error` / `error_description` / `error_uri`——state 通过后
+/// 必须归一为 `provider_error`（`error_uri` 并入消息）。
+async test "github: callback error params are normalized to provider_error" {
+  let config = github_fixed_config([])
+  let start = @github.begin_auth(config, {
+    state: Some("st-1"),
+    code_verifier: Some("verifier-1"),
+    nonce: None,
+  })
+  let callback = @core.CallbackParams::from_query_string(
+    "error=verification_failed&error_description=humana%20verification%20failed&error_uri=https://docs.github.com/troubleshooting&state=st-1",
+  )
+  let outcome = try {
+    let _ = @github.complete_auth(config, callback, start)
+    "no-error"
+  } catch {
+    e => @core.auth_error_code(e) + "|" + @core.auth_error_message(e)
+  }
+  assert_true(outcome.has_prefix("provider_error|"))
+  assert_true(outcome.contains("verification_failed"))
+  assert_true(outcome.contains("https://docs.github.com/troubleshooting"))
+}
+
+///|
+/// `/user.email` 为 null 且 `/user/emails` **无 primary** 项 → 回退首个
+/// `verified=true`（GitHub 私密邮箱场景；调研核对补充的选择规则）。
+async test "github: falls back to first verified email when no primary" {
+  let emails_body = "[" +
+    "{\"email\":\"unverified@example.com\",\"primary\":false,\"verified\":false,\"visibility\":\"private\"}," +
+    "{\"email\":\"verified-a@example.com\",\"primary\":false,\"verified\":true,\"visibility\":\"private\"}," +
+    "{\"email\":\"verified-b@example.com\",\"primary\":false,\"verified\":true,\"visibility\":\"private\"}" +
+    "]"
+  let config = github_fixed_config([
+    github_token_ok(),
+    github_user_without_email(),
+    { status: 200, headers: Map([("Content-Type", "application/json")]), body: emails_body },
+  ])
+  let start = @github.begin_auth(config, {
+    state: Some("st-1"),
+    code_verifier: Some("verifier-1"),
+    nonce: None,
+  })
+  let cb = @core.CallbackParams::from_query_string("code=CODE1&state=st-1")
+  let identity = @github.complete_auth(config, cb, start)
+  @debug.assert_eq(identity.email, Some("verified-a@example.com"))
+  assert_true(identity.email_verified)
+}

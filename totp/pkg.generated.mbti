@@ -17,13 +17,13 @@ pub struct StandardTotpPrimitive {
   pepper : Bytes?
 }
 pub fn StandardTotpPrimitive::config(Self) -> TotpConfig
-pub fn StandardTotpPrimitive::generate_recovery_codes(Self, Int) -> Array[String] raise @core.AuthError
-pub fn StandardTotpPrimitive::generate_secret(Self, Int) -> Bytes raise @core.AuthError
+pub fn StandardTotpPrimitive::generate_recovery_codes(Self, Int32) -> Array[String] raise @core.AuthError
+pub fn StandardTotpPrimitive::generate_secret(Self, Int32) -> Bytes raise @core.AuthError
 pub fn StandardTotpPrimitive::hash_recovery_codes(Self, Array[String]) -> Array[String] raise @core.AuthError
 pub fn StandardTotpPrimitive::new() -> Self
 pub fn StandardTotpPrimitive::otpauth_uri(Self, Bytes, String, String, @core.TotpOptions) -> String raise @core.AuthError
 pub fn StandardTotpPrimitive::recovery_hash_pepper(Self) -> Bytes?
-pub fn StandardTotpPrimitive::verify(Self, Bytes, String, Int64, Int) -> Bool raise @core.AuthError
+pub fn StandardTotpPrimitive::verify(Self, Bytes, String, Int64, Int32) -> Bool raise @core.AuthError
 pub fn StandardTotpPrimitive::with_config(Self, TotpConfig) -> Self
 pub fn StandardTotpPrimitive::with_random(Self, &@core.RandomSource) -> Self
 pub fn StandardTotpPrimitive::with_recovery_hash_pepper(Self, Bytes) -> Self
@@ -32,17 +32,17 @@ pub impl @core.TotpPrimitive for StandardTotpPrimitive
 pub(all) struct TotpConfig {
   issuer : String
   account : String
-  digits : Int
-  period : Int
+  digits : Int32
+  period : Int32
   algorithm : String
-  window : Int
+  window : Int32
 }
 pub fn TotpConfig::new(String, String) -> Self
-pub fn TotpConfig::recommended_secret_bits(Self) -> Int
+pub fn TotpConfig::recommended_secret_bits(Self) -> Int32
 pub fn TotpConfig::with_algorithm(Self, String) -> Self
-pub fn TotpConfig::with_digits(Self, Int) -> Self
-pub fn TotpConfig::with_period(Self, Int) -> Self
-pub fn TotpConfig::with_window(Self, Int) -> Self
+pub fn TotpConfig::with_digits(Self, Int32) -> Self
+pub fn TotpConfig::with_period(Self, Int32) -> Self
+pub fn TotpConfig::with_window(Self, Int32) -> Self
 
 pub(all) struct TotpEnrollment {
   secret : Bytes
@@ -61,10 +61,10 @@ pub struct TotpService {
 }
 pub fn TotpService::config(Self) -> TotpConfig
 pub fn TotpService::enroll(Self) -> TotpEnrollment raise @core.AuthError
-pub fn TotpService::enroll_with_bits(Self, Int) -> TotpEnrollment raise @core.AuthError
+pub fn TotpService::enroll_with_bits(Self, Int32) -> TotpEnrollment raise @core.AuthError
 pub fn TotpService::new(TotpConfig) -> Self
 pub fn TotpService::recovery_codes(Self) -> TotpRecoveryCodes raise @core.AuthError
-pub fn TotpService::recovery_codes_with(Self, Int) -> TotpRecoveryCodes raise @core.AuthError
+pub fn TotpService::recovery_codes_with(Self, Int32) -> TotpRecoveryCodes raise @core.AuthError
 pub fn TotpService::verify(Self, Bytes, String) -> Bool raise @core.AuthError
 pub fn TotpService::verify_at(Self, Bytes, String, Int64) -> Bool raise @core.AuthError
 pub fn TotpService::with_clock(Self, &@core.Clock) -> Self

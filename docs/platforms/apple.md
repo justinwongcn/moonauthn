@@ -53,6 +53,14 @@ let identity = @apple.complete_auth(config, callback, start)
   调用 `@apple.apple_client_secret(config)` 可单独取用；TTL 默认 `15777000` 秒（< 6 个月上限）。
 - **回调是 `form_post`（POST body），不是 query**：`begin_auth` 会自动带 `response_mode=form_post`；
   解析用 `@apple.apple_callback(body)`（`CallbackParams::from_form_body`），**不要**去读 query。
+- **失败回调也在 form body 里**：错误字段 `error` / `error_description` 经 POST body 回传
+  （`form_post` 响应模式的标准形态）。库在 state 校验通过后读取，归一为 `ProviderError`——
+  用户取消授权不会误报成 `missing_param`。
+- 🔴 **PKCE 支持情况待核实（Owner 决策项）**：库**默认向 Apple 发送 PKCE S256**
+  （`begin_auth` 恒带 `code_challenge`）。2026-11-17 调研核对指出：Apple 官方文档未声明
+  授权端点的 `code_challenge_methods_supported`，本库平台文档亦无权威核实记录——
+  按 Owner 长期原则标记为**待真实应用端到端验证**。若实测发现 Apple 拒绝 `code_challenge`
+  参数，需为 Apple 提供关闭 PKCE 的开关（当前不可配置）。
 - **`id_token` 验签 + `iss = https://appleid.apple.com`**：与其它 provider 相同走 `oidc`。
 - **姓名只返回一次**：Apple 仅在**用户首次授权**时经 `user` 字段返回姓名（且是 JSON 字符串）。
   库**不缓存**它——`complete_auth` 在「本次回调带 `user`」时补入 `display_name`，其余情况为 `None`。

@@ -77,6 +77,9 @@ pub impl AppleProvider for DefaultAppleProvider with fn begin_auth(self, secrets
 
 ///|
 /// 实现 `AppleProvider`：`complete_auth`。
+///
+/// 顺序契约：校验 `state` → 回调错误字段（`form_post` 失败回调经 body 传
+/// `error` / `error_description`）→ 才轮到 `id_token` / `code`。
 pub impl AppleProvider for DefaultAppleProvider with fn complete_auth(
   self,
   callback,
@@ -88,6 +91,10 @@ pub impl AppleProvider for DefaultAppleProvider with fn complete_auth(
   }
   if state != expected.state {
     raise @core.StateMismatch
+  }
+  match callback.provider_error() {
+    Some(e) => raise e
+    None => ()
   }
   let id_token = match callback.get("id_token") {
     Some(t) => t

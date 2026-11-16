@@ -14,11 +14,11 @@ pub struct MemoryChallengeStore {
   clock : &@core.Clock
   values : Map[String, String]
   expiries : Map[String, Int64]
-  mut puts_since_sweep : Int
+  mut puts_since_sweep : Int32
 }
 pub fn MemoryChallengeStore::new(&@core.Clock) -> Self
 pub async fn MemoryChallengeStore::peek(Self, String) -> String? raise @core.AuthError
-pub async fn MemoryChallengeStore::put(Self, String, String, Int) -> Unit raise @core.AuthError
+pub async fn MemoryChallengeStore::put(Self, String, String, Int32) -> Unit raise @core.AuthError
 pub async fn MemoryChallengeStore::take(Self, String) -> String? raise @core.AuthError
 pub impl @core.ChallengeStore for MemoryChallengeStore
 

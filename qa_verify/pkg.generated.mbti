@@ -15,7 +15,7 @@ pub(all) struct FailingStore {
 }
 pub fn FailingStore::new() -> Self
 pub async fn FailingStore::peek(Self, String) -> String? raise @core.AuthError
-pub async fn FailingStore::put(Self, String, String, Int) -> Unit raise @core.AuthError
+pub async fn FailingStore::put(Self, String, String, Int32) -> Unit raise @core.AuthError
 pub async fn FailingStore::take(Self, String) -> String? raise @core.AuthError
 pub impl @core.ChallengeStore for FailingStore
 

@@ -22,7 +22,7 @@ pub fn auth_error_message(AuthError) -> String
 
 pub fn auth_from_jwt_reason(String, String, String) -> AuthError
 
-pub fn auth_http_status(Int, String) -> AuthError
+pub fn auth_http_status(Int32, String) -> AuthError
 
 pub fn auth_invalid_input(String) -> AuthError
 
@@ -50,7 +50,7 @@ pub fn auth_random_unavailable() -> AuthError
 
 pub fn auth_rp_id_mismatch() -> AuthError
 
-pub fn auth_sign_count_regression(Int, Int) -> AuthError
+pub fn auth_sign_count_regression(Int32, Int32) -> AuthError
 
 pub fn auth_signature_invalid() -> AuthError
 
@@ -66,7 +66,7 @@ pub fn auth_unsupported(String) -> AuthError
 
 pub fn auth_unsupported_alg(String) -> AuthError
 
-pub fn lexicographic_compare(String, String) -> Int
+pub fn lexicographic_compare(String, String) -> Int32
 
 pub fn provider_descriptor(String) -> ProviderDescriptor?
 
@@ -79,7 +79,7 @@ pub fn sorted_keys(Map[String, String]) -> Array[String]
 // Errors
 pub(all) suberror AuthError {
   Network(String)
-  HttpStatus(Int, String)
+  HttpStatus(Int32, String)
   MissingParam(String)
   StateMismatch
   NonceMismatch
@@ -97,7 +97,7 @@ pub(all) suberror AuthError {
   OriginMismatch(String, String)
   RpIdMismatch
   CrossOriginRejected
-  SignCountRegression(Int, Int)
+  SignCountRegression(Int32, Int32)
   TypeMismatch(String, String)
   ProviderError(String, String)
   ParseError(String)
@@ -115,13 +115,13 @@ pub(all) struct AssertionInput {
   expected_challenge : String
   expected_origin : String
   rp_id : String
-  stored_sign_count : Int
+  stored_sign_count : Int32
 }
 
 pub(all) struct AsyncHttpClient {
-  timeout_ms : Int?
+  timeout_ms : Int32?
 }
-pub fn AsyncHttpClient::new(timeout_ms? : Int) -> Self
+pub fn AsyncHttpClient::new(timeout_ms? : Int32) -> Self
 pub async fn AsyncHttpClient::send(Self, HttpRequest) -> HttpResponse raise AuthError
 pub impl HttpClient for AsyncHttpClient
 
@@ -152,6 +152,7 @@ pub fn CallbackParams::from_form_body(String) -> Self
 pub fn CallbackParams::from_pairs(Map[String, String]) -> Self
 pub fn CallbackParams::from_query_string(String) -> Self
 pub fn CallbackParams::get(Self, String) -> String?
+pub fn CallbackParams::provider_error(Self) -> AuthError?
 
 pub(all) struct ExternalIdentity {
   provider : String
@@ -177,7 +178,7 @@ pub(all) struct HttpRequest {
 }
 
 pub(all) struct HttpResponse {
-  status : Int
+  status : Int32
   headers : Map[String, String]
   body : String
 }
@@ -199,7 +200,7 @@ pub(all) struct IdTokenExpectations {
   audiences : Array[String]
   nonce : String?
   jwks_uri : String?
-  leeway_seconds : Int?
+  leeway_seconds : Int32?
   algorithms : Array[String]
 }
 
@@ -256,15 +257,15 @@ pub(all) struct TokenSet {
   access_token : String
   id_token : String?
   refresh_token : String?
-  expires_in : Int?
+  expires_in : Int32?
   token_type : String?
   scope : String?
   raw : Map[String, String]
 }
 
 pub(all) struct TotpOptions {
-  digits : Int
-  period : Int
+  digits : Int32
+  period : Int32
   algorithm : String
 }
 
@@ -274,14 +275,14 @@ pub(all) enum UidKind {
 }
 
 pub(all) struct VerifiedAssertion {
-  sign_count : Int
+  sign_count : Int32
   user_verified : Bool
 }
 
 pub(all) struct VerifiedRegistration {
   credential_id : Bytes
   public_key : Bytes
-  sign_count : Int
+  sign_count : Int32
   aaguid : String?
   user_verified : Bool
 }
@@ -290,7 +291,7 @@ pub(all) struct VerifiedRegistration {
 
 // Traits
 pub(open) trait ChallengeStore {
-  async fn put(Self, String, String, Int) -> Unit raise AuthError
+  async fn put(Self, String, String, Int32) -> Unit raise AuthError
   async fn take(Self, String) -> String? raise AuthError
   async fn peek(Self, String) -> String? raise AuthError
 }
@@ -313,7 +314,7 @@ pub(open) trait OAuthAuthCode {
 }
 
 pub(open) trait RandomSource {
-  fn bytes(Self, Int) -> Bytes raise AuthError
+  fn bytes(Self, Int32) -> Bytes raise AuthError
 }
 
 pub(open) trait SecretSigner {
@@ -321,10 +322,10 @@ pub(open) trait SecretSigner {
 }
 
 pub(open) trait TotpPrimitive {
-  fn generate_secret(Self, Int) -> Bytes raise AuthError
+  fn generate_secret(Self, Int32) -> Bytes raise AuthError
   fn otpauth_uri(Self, Bytes, String, String, TotpOptions) -> String raise AuthError
-  fn verify(Self, Bytes, String, Int64, Int) -> Bool raise AuthError
-  fn generate_recovery_codes(Self, Int) -> Array[String] raise AuthError
+  fn verify(Self, Bytes, String, Int64, Int32) -> Bool raise AuthError
+  fn generate_recovery_codes(Self, Int32) -> Array[String] raise AuthError
   fn hash_recovery_codes(Self, Array[String]) -> Array[String] raise AuthError
 }
 

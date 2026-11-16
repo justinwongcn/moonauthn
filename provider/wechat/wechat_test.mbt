@@ -190,3 +190,111 @@ async test "wechat: state mismatch is rejected" {
   }
   @debug.assert_eq(code, "state_mismatch")
 }
+
+// ════════ 小程序登录（code2Session）════════
+
+///|
+/// 成功形态（带 `unionid`）：`uid = unionid`（Stable，与网站链路同一主键口径）；
+/// `session_key` 经专用字段返回且**不进** `extra`（敏感密钥防误落日志）。
+async test "wechat: code2session with unionid yields Stable uid and session_key" {
+  let client : &@core.HttpClient = @contract.MockHttpClient::new([
+    {
+      status: 200,
+      headers: Map([("Content-Type", "application/json")]),
+      body: "{\"openid\":\"MP-OPENID1\",\"unionid\":\"MP-UNION1\",\"session_key\":\"SK-1\"}",
+    },
+  ])
+  let config = @wechat.WeChatConfig::new(
+    "wxmp123",
+    "SECRET",
+    "https://app.example/cb",
+  ).with_http(client)
+  let result = @wechat.wechat_code2_session(config, "JS-CODE-1")
+  @debug.assert_eq(result.identity.provider, "wechat")
+  @debug.assert_eq(result.identity.uid, "MP-UNION1")
+  match result.identity.uid_kind {
+    @core.UidKind::Stable => ()
+    @core.UidKind::Degraded => abort("unionid uid must be Stable")
+  }
+  @debug.assert_eq(result.identity.email, None)
+  @debug.assert_eq(result.session_key, "SK-1")
+  @debug.assert_eq(result.identity.extra.get("openid"), Some("MP-OPENID1"))
+  @debug.assert_eq(result.identity.extra.get("unionid"), Some("MP-UNION1"))
+  @debug.assert_eq(result.identity.extra.get("session_key"), None)
+}
+
+///|
+/// 缺 `unionid` → `uid = openid` 且 `Degraded`（调用方据此决定绑定策略）。
+async test "wechat: code2session without unionid yields Degraded openid uid" {
+  let client : &@core.HttpClient = @contract.MockHttpClient::new([
+    {
+      status: 200,
+      headers: Map([("Content-Type", "application/json")]),
+      body: "{\"openid\":\"MP-OPENID2\",\"session_key\":\"SK-2\"}",
+    },
+  ])
+  let config = @wechat.WeChatConfig::new(
+    "wxmp123",
+    "SECRET",
+    "https://app.example/cb",
+  ).with_http(client)
+  let result = @wechat.wechat_code2_session(config, "JS-CODE-2")
+  @debug.assert_eq(result.identity.uid, "MP-OPENID2")
+  match result.identity.uid_kind {
+    @core.UidKind::Stable => abort("openid-only uid must be Degraded")
+    @core.UidKind::Degraded => ()
+  }
+}
+
+///|
+/// `errcode=40029`（code 无效）→ `ProviderError("40029", errmsg)`——HTTP 仍 200，
+/// 必须先查 errcode（与整包微信错误口径一致）。
+async test "wechat: code2session errcode is normalized to provider_error" {
+  let client : &@core.HttpClient = @contract.MockHttpClient::new([
+    {
+      status: 200,
+      headers: Map([("Content-Type", "application/json")]),
+      body: "{\"errcode\":40029,\"errmsg\":\"invalid code\"}",
+    },
+  ])
+  let config = @wechat.WeChatConfig::new(
+    "wxmp123",
+    "SECRET",
+    "https://app.example/cb",
+  ).with_http(client)
+  let outcome = try {
+    let _ = @wechat.wechat_code2_session(config, "BAD-CODE")
+    "no-error"
+  } catch {
+    e => @core.auth_error_code(e) + "|" + @core.auth_error_message(e)
+  }
+  assert_true(outcome.has_prefix("provider_error|"))
+  assert_true(outcome.contains("40029"))
+}
+
+///|
+/// `js_code` / `appid` / `secret` 含特殊字符时必须被编码（动态值零信任口径，
+/// 与 `wechat_fetch_token` 一致）；经 `recorded_requests` 断言实际发出的 URL。
+async test "wechat: code2session encodes dynamic query values" {
+  let mock = @contract.MockHttpClient::new([
+    {
+      status: 200,
+      headers: Map([("Content-Type", "application/json")]),
+      body: "{\"openid\":\"O\",\"session_key\":\"S\"}",
+    },
+  ])
+  let client : &@core.HttpClient = mock
+  let config = @wechat.WeChatConfig::new(
+    "wx&mp=1",
+    "sec ret",
+    "https://app.example/cb",
+  ).with_http(client).with_code2_session_endpoint("mock://jscode2session")
+  let _result = @wechat.wechat_code2_session(config, "JS CODE&1")
+  let reqs = mock.recorded_requests()
+  @debug.assert_eq(reqs.length(), 1)
+  let url = reqs[0].url
+  assert_true(url.has_prefix("mock://jscode2session?appid=wx%26mp%3D1"))
+  assert_true(url.contains("secret=sec%20ret"))
+  assert_true(url.contains("js_code=JS%20CODE%261"))
+  assert_true(url.contains("grant_type=authorization_code"))
+}

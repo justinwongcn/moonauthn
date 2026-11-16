@@ -23,7 +23,7 @@ pub(all) struct MyFailingStore {
 }
 pub fn MyFailingStore::new() -> Self
 pub async fn MyFailingStore::peek(Self, String) -> String? raise @core.AuthError
-pub async fn MyFailingStore::put(Self, String, String, Int) -> Unit raise @core.AuthError
+pub async fn MyFailingStore::put(Self, String, String, Int32) -> Unit raise @core.AuthError
 pub async fn MyFailingStore::take(Self, String) -> String? raise @core.AuthError
 pub impl @core.ChallengeStore for MyFailingStore
 
@@ -38,7 +38,7 @@ pub(all) struct MyStore {
 }
 pub fn MyStore::new() -> Self
 pub async fn MyStore::peek(Self, String) -> String? raise @core.AuthError
-pub async fn MyStore::put(Self, String, String, Int) -> Unit raise @core.AuthError
+pub async fn MyStore::put(Self, String, String, Int32) -> Unit raise @core.AuthError
 pub async fn MyStore::take(Self, String) -> String? raise @core.AuthError
 pub impl @core.ChallengeStore for MyStore
 

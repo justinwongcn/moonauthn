@@ -84,7 +84,8 @@ pub impl FeishuProvider for DefaultFeishuProvider with fn begin_auth(self, secre
 ///|
 /// 实现 `FeishuProvider`：`complete_auth`。
 ///
-/// 流程：校验 `state` → 换 `user_access_token` → 取用户信息 → 归一身份。
+/// 顺序契约：校验 `state` → 回调错误参数（用户拒绝授权时飞书以
+/// `error=access_denied` 回传）→ 换 `user_access_token` → 取用户信息 → 归一身份。
 pub impl FeishuProvider for DefaultFeishuProvider with fn complete_auth(
   self,
   callback,
@@ -96,6 +97,10 @@ pub impl FeishuProvider for DefaultFeishuProvider with fn complete_auth(
   }
   if state != expected.state {
     raise @core.StateMismatch
+  }
+  match callback.provider_error() {
+    Some(e) => raise e
+    None => ()
   }
   let code = match callback.get("code") {
     Some(c) => c

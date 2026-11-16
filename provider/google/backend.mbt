@@ -97,21 +97,29 @@ pub impl GoogleProvider for DefaultGoogleProvider with fn begin_auth(self, secre
 
 ///|
 /// 实现 `GoogleProvider`：`complete_auth`。
+///
+/// 顺序契约：先校验 `state`（失败即 `StateMismatch`，不发起任何出站请求）→
+/// 回调错误参数（用户拒绝授权时 Google 以 `error` / `error_description` 回传）
+/// → 才轮到 `code`。
 pub impl GoogleProvider for DefaultGoogleProvider with fn complete_auth(
   self,
   callback,
   expected,
 ) {
-  let code = match callback.get("code") {
-    Some(c) => c
-    None => raise @core.MissingParam("code")
-  }
   let state = match callback.get("state") {
     Some(s) => s
     None => raise @core.MissingParam("state")
   }
   if state != expected.state {
     raise @core.StateMismatch
+  }
+  match callback.provider_error() {
+    Some(e) => raise e
+    None => ()
+  }
+  let code = match callback.get("code") {
+    Some(c) => c
+    None => raise @core.MissingParam("code")
   }
   let token = self.oauth.exchange({
     token_endpoint: self.config.token_endpoint,

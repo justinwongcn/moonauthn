@@ -15,7 +15,7 @@ pub(all) struct AuthenticationOptions {
   rp_id : String
   allow_credentials : Array[CredentialDescriptor]?
   user_verification : String?
-  timeout : Int?
+  timeout : Int32?
 }
 
 pub(all) struct AuthenticatorSelection {
@@ -44,16 +44,16 @@ pub(all) struct PasskeyConfig {
   rp_name : String
   expected_origin : String
   require_user_verification : Bool
-  challenge_ttl_seconds : Int
+  challenge_ttl_seconds : Int32
 }
 pub fn PasskeyConfig::new(String, String, String) -> Self
-pub fn PasskeyConfig::with_challenge_ttl(Self, Int) -> Self
+pub fn PasskeyConfig::with_challenge_ttl(Self, Int32) -> Self
 pub fn PasskeyConfig::with_user_verification(Self, Bool) -> Self
 
 pub(all) struct PasskeyCredential {
   credential_id : Bytes
   public_key : Bytes
-  sign_count : Int
+  sign_count : Int32
   aaguid : String?
   user_verified : Bool
   user_handle : Bytes?
@@ -68,7 +68,7 @@ pub struct PasskeyService {
   random : &@core.RandomSource
   clock : &@core.Clock
 }
-pub fn PasskeyService::authentication_options(Self, PasskeyChallenge, allow_credentials? : Array[CredentialDescriptor], user_verification? : String?, timeout? : Int) -> AuthenticationOptions
+pub fn PasskeyService::authentication_options(Self, PasskeyChallenge, allow_credentials? : Array[CredentialDescriptor], user_verification? : String?, timeout? : Int32) -> AuthenticationOptions
 pub async fn PasskeyService::begin_authentication(Self) -> PasskeyChallenge raise @core.AuthError
 pub async fn PasskeyService::begin_registration(Self) -> PasskeyChallenge raise @core.AuthError
 pub fn PasskeyService::config(Self) -> PasskeyConfig
@@ -77,7 +77,7 @@ pub async fn PasskeyService::finish_authentication_stored(Self, String, @core.As
 pub async fn PasskeyService::finish_registration(Self, @core.RegistrationInput) -> @core.VerifiedRegistration raise @core.AuthError
 pub async fn PasskeyService::finish_registration_stored(Self, String, @core.RegistrationInput) -> @core.VerifiedRegistration raise @core.AuthError
 pub fn PasskeyService::new(PasskeyConfig) -> Self
-pub fn PasskeyService::registration_options(Self, PasskeyChallenge, UserInfo, timeout? : Int, attestation? : String, authenticator_selection? : AuthenticatorSelection?, exclude_credentials? : Array[CredentialDescriptor]) -> RegistrationOptions
+pub fn PasskeyService::registration_options(Self, PasskeyChallenge, UserInfo, timeout? : Int32, attestation? : String, authenticator_selection? : AuthenticatorSelection?, exclude_credentials? : Array[CredentialDescriptor]) -> RegistrationOptions
 pub fn PasskeyService::with_clock(Self, &@core.Clock) -> Self
 pub fn PasskeyService::with_random(Self, &@core.RandomSource) -> Self
 pub fn PasskeyService::with_store(Self, &@core.ChallengeStore) -> Self
@@ -85,7 +85,7 @@ pub fn PasskeyService::with_verifier(Self, &@core.WebAuthnVerifier) -> Self
 
 pub(all) struct PublicKeyCredParam {
   type_ : String
-  alg : Int
+  alg : Int32
 }
 pub fn PublicKeyCredParam::es256() -> Self
 
@@ -94,7 +94,7 @@ pub(all) struct RegistrationOptions {
   rp : RpInfo
   user : UserInfo
   pub_key_cred_params : Array[PublicKeyCredParam]
-  timeout : Int?
+  timeout : Int32?
   attestation : String?
   authenticator_selection : AuthenticatorSelection?
   exclude_credentials : Array[CredentialDescriptor]?

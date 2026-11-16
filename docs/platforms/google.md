@@ -57,8 +57,11 @@ let identity = @google.complete_auth(config, callback, start)
 
 - **PKCE 不可省**：`begin_auth` 默认生成 `code_verifier` 并带 `code_challenge_method=S256`；`complete_auth` 会带上
   `start.code_verifier` 换 token。若你自带 verifier，请在 `SuppliedSecrets.code_verifier` 传入。
-- **`state` 由库校验**：`complete_auth` 会比对回调 `state` 与 `start.state`，不符抛 `StateMismatch`
-  （**在发起任何网络请求之前**）。
+- **`state` 由库校验**：`complete_auth` **先**比对回调 `state` 与 `start.state`，不符抛 `StateMismatch`
+  （**在发起任何网络请求之前**；官方回调契约亦要求「先校验 state，再处理 code」）。
+- 🔴 **用户拒绝授权（`error=access_denied`）**：Google 失败回调以 query 回传
+  `error` / `error_description` / `state`。库在 state 校验通过后读取这些参数，归一为
+  `ProviderError`（code=原值，description 并入消息）——**不会**误报成 `missing_param`。
 - **`nonce` 透传**：`begin_auth` 的 `nonce` 会写入 `id_token` 期望值，`complete_auth` 验签时比对，不符抛 `NonceMismatch`。
 - **`email_verified` 是可选 claim**：缺失时库归一为 `false`（不是 `None`）。
 - **`iss` 必须匹配**：`with_endpoints` 改了 issuer 后，验签会按新值比对；测试固定向量时勿忘同步。

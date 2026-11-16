@@ -87,6 +87,9 @@ let identity = @feishu.complete_auth(config, callback, start)
   未开通 / 未发布时字段缺失（不是报错）——`email` 缺失即 `email = None`。
 - **PKCE**：飞书新版 OAuth 支持 `code_challenge`（S256），库默认全程启用。
 - **`state` 必填**：`complete_auth` 会校验 `state`，不符抛 `StateMismatch`。
+- **用户拒绝授权**：失败回调形如 `?error=access_denied&state=STATE`（官方回调文档形态）。
+  库在 state 校验通过后读取，归一为 `ProviderError("access_denied", ...)`——
+  不会误报成 `missing_param`。
 
 ## 6. 相关源码
 

@@ -3,8 +3,9 @@
 //! 取值表（见平台文档 `docs/platforms/github.md`）：
 //! - `uid = id`（GitHub 的稳定用户标识），`uid_kind = Stable`；
 //! - `display_name = name ?? login`，`avatar = avatar_url`；
-//! - `email`：`/user.email`（公开邮箱）；为 `null` 时补拉 `/user/emails`
-//!   取首个 `primary && verified` 项——该调用是**可选增强**，失败不失败登录；
+//! - `email`：`/user.email`（公开邮箱）；为 `null` 时补拉 `/user/emails`，选首个
+//!   `primary && verified`，没有主邮箱则回退首个 `verified`——该调用是**可选增强**，
+//!   失败不失败登录；
 //! - 其余字段进 `extra`（字符串视图，无第三方类型泄漏）。
 
 ///|
@@ -33,7 +34,12 @@ async fn github_fetch_user(
 }
 
 ///|
-/// 从 `/user/emails` 取首个 `primary && verified` 邮箱（含 verified 标记）。
+/// 从 `/user/emails` 选邮箱（含 verified 标记）。选择规则：
+///
+/// 1. 优先取首个 `primary && verified`；
+/// 2. 没有主邮箱时取首个 `verified`（GitHub 的私密邮箱场景：`/user.email` 为
+///    `null`、列表里只有无 primary 的已验证邮箱）；
+/// 3. 只有未验证邮箱时不采用（返回 `None`）。
 ///
 /// 🔴 该调用是**可选增强**：未授予 `user:email` scope 时 GitHub 回非 2xx——
 /// 此时登录已成立（`uid` 已拿到），邮箱保持 `None`，**不因增强失败而失败登录**
@@ -60,6 +66,9 @@ async fn github_fetch_primary_email(
   }
   match parsed {
     Array(items) => {
+      // 首个 verified（无论是否 primary）——primary 命中即立刻返回，
+      // 否则循环结束后作为回退档。
+      let mut first_verified : EmailPick? = None
       for item in items {
         match item {
           Object(m) => {
@@ -71,15 +80,27 @@ async fn github_fetch_primary_email(
               Some(True) => true
               _ => false
             }
-            match (primary, verified, m.get("email")) {
-              (true, true, Some(String(s))) => return Some({ email: s, verified: true })
+            let email = match m.get("email") {
+              Some(String(s)) => if s.length() > 0 { Some(s) } else { None }
+              _ => None
+            }
+            match (verified, email) {
+              (true, Some(s)) => {
+                if primary {
+                  return Some({ email: s, verified: true })
+                }
+                match first_verified {
+                  None => first_verified = Some({ email: s, verified: true })
+                  Some(_) => ()
+                }
+              }
               _ => ()
             }
           }
           _ => ()
         }
       }
-      None
+      first_verified
     }
     _ => None
   }

@@ -196,3 +196,106 @@ async test "alipay: state mismatch is rejected" {
   }
   @debug.assert_eq(code, "state_mismatch")
 }
+
+// ════════ 身份键：open_id 优先 ════════
+
+///|
+/// userinfo 带 `open_id`（新商户形态）→ `uid = open_id`（官方口径：新商户使用
+/// open_id，user_id 未来计划逐步回收；两字段响应中二选一）。
+async test "alipay: open_id takes precedence as uid" {
+  let client : &@core.HttpClient = @contract.MockHttpClient::new([
+    {
+      status: 200,
+      headers: Map([("Content-Type", "application/json")]),
+      body: "{\"alipay_system_oauth_token_response\":{\"access_token\":\"AT\",\"open_id\":\"OID-1\",\"expires_in\":3600}}",
+    },
+    {
+      status: 200,
+      headers: Map([("Content-Type", "application/json")]),
+      body: "{\"alipay_user_info_share_response\":{\"open_id\":\"OID-1\",\"nick_name\":\"新商户用户\",\"avatar\":\"https://tfs.example/b.png\"}}",
+    },
+  ])
+  let config = alipay_config().with_endpoints(
+    "mock://gateway",
+    "https://openauth.alipay.com/oauth2/publicAppAuthorize.htm",
+    "auth_user",
+  ).with_http(client)
+  let start = @alipay.begin_auth(config, {
+    state: Some("st-1"),
+    code_verifier: None,
+    nonce: None,
+  })
+  let cb = @core.CallbackParams::from_query_string("auth_code=AC&state=st-1")
+  let identity = @alipay.complete_auth(config, cb, start)
+  @debug.assert_eq(identity.uid, "OID-1")
+  match identity.uid_kind {
+    @core.UidKind::Stable => ()
+    @core.UidKind::Degraded => abort("alipay uid must be Stable")
+  }
+}
+
+///|
+/// userinfo 缺 `open_id` 时回退 token 响应里的 `open_id`（token 与 userinfo
+/// 携带同一标识，任一处缺省均可兜底）。
+async test "alipay: token open_id is used as fallback" {
+  let client : &@core.HttpClient = @contract.MockHttpClient::new([
+    {
+      status: 200,
+      headers: Map([("Content-Type", "application/json")]),
+      body: "{\"alipay_system_oauth_token_response\":{\"access_token\":\"AT\",\"open_id\":\"OID-TOKEN\",\"expires_in\":3600}}",
+    },
+    {
+      status: 200,
+      headers: Map([("Content-Type", "application/json")]),
+      body: "{\"alipay_user_info_share_response\":{\"nick_name\":\"兜底用户\"}}",
+    },
+  ])
+  let config = alipay_config().with_endpoints(
+    "mock://gateway",
+    "https://openauth.alipay.com/oauth2/publicAppAuthorize.htm",
+    "auth_user",
+  ).with_http(client)
+  let start = @alipay.begin_auth(config, {
+    state: Some("st-1"),
+    code_verifier: None,
+    nonce: None,
+  })
+  let cb = @core.CallbackParams::from_query_string("auth_code=AC&state=st-1")
+  let identity = @alipay.complete_auth(config, cb, start)
+  @debug.assert_eq(identity.uid, "OID-TOKEN")
+}
+
+///|
+/// 两处都没有任何标识 → `ParseError`（不静默产出空 uid）。
+async test "alipay: missing both open_id and user_id is a parse error" {
+  let client : &@core.HttpClient = @contract.MockHttpClient::new([
+    {
+      status: 200,
+      headers: Map([("Content-Type", "application/json")]),
+      body: "{\"alipay_system_oauth_token_response\":{\"access_token\":\"AT\",\"expires_in\":3600}}",
+    },
+    {
+      status: 200,
+      headers: Map([("Content-Type", "application/json")]),
+      body: "{\"alipay_user_info_share_response\":{\"nick_name\":\"无标识\"}}",
+    },
+  ])
+  let config = alipay_config().with_endpoints(
+    "mock://gateway",
+    "https://openauth.alipay.com/oauth2/publicAppAuthorize.htm",
+    "auth_user",
+  ).with_http(client)
+  let start = @alipay.begin_auth(config, {
+    state: Some("st-1"),
+    code_verifier: None,
+    nonce: None,
+  })
+  let cb = @core.CallbackParams::from_query_string("auth_code=AC&state=st-1")
+  let code = try {
+    let _ = @alipay.complete_auth(config, cb, start)
+    "no-error"
+  } catch {
+    e => @core.auth_error_code(e)
+  }
+  @debug.assert_eq(code, "parse_error")
+}

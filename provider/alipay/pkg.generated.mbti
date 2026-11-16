@@ -12,7 +12,7 @@ pub async fn alipay_fetch_userinfo(AlipayConfig, String) -> Map[String, String] 
 
 pub async fn alipay_gateway_call(AlipayConfig, String, String, Map[String, String]) -> Map[String, String] raise @core.AuthError
 
-pub fn alipay_identity(Map[String, String], String) -> @core.ExternalIdentity raise @core.AuthError
+pub fn alipay_identity(Map[String, String], String, String) -> @core.ExternalIdentity raise @core.AuthError
 
 pub fn alipay_sign(AlipayConfig, Map[String, String]) -> String raise @core.AuthError
 

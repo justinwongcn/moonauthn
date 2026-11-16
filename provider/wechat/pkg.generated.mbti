@@ -14,6 +14,8 @@ pub fn wechat_authorize_url(WeChatConfig, String) -> String
 
 pub fn wechat_callback(String) -> @core.CallbackParams
 
+pub async fn wechat_code2_session(WeChatConfig, String) -> WeChatCode2Session raise @core.AuthError
+
 pub async fn wechat_fetch_token(WeChatConfig, String) -> WeChatToken raise @core.AuthError
 
 pub async fn wechat_fetch_userinfo(WeChatConfig, String, String) -> String raise @core.AuthError
@@ -36,6 +38,11 @@ pub fn DefaultWeChatProvider::config(Self) -> WeChatConfig
 pub fn DefaultWeChatProvider::new(WeChatConfig) -> Self
 pub impl WeChatProvider for DefaultWeChatProvider
 
+pub(all) struct WeChatCode2Session {
+  identity : @core.ExternalIdentity
+  session_key : String
+}
+
 pub struct WeChatConfig {
   appid : String
   secret : String
@@ -44,12 +51,14 @@ pub struct WeChatConfig {
   authorization_endpoint : String
   token_endpoint : String
   userinfo_endpoint : String
+  code2_session_endpoint : String
   http : &@core.HttpClient
   clock : &@core.Clock
   random : &@core.RandomSource
 }
 pub fn WeChatConfig::new(String, String, String) -> Self
 pub fn WeChatConfig::with_clock(Self, &@core.Clock) -> Self
+pub fn WeChatConfig::with_code2_session_endpoint(Self, String) -> Self
 pub fn WeChatConfig::with_endpoints(Self, String, String, String) -> Self
 pub fn WeChatConfig::with_http(Self, &@core.HttpClient) -> Self
 pub fn WeChatConfig::with_random(Self, &@core.RandomSource) -> Self
@@ -60,7 +69,7 @@ pub(all) struct WeChatToken {
   openid : String
   unionid : String?
   refresh_token : String?
-  expires_in : Int?
+  expires_in : Int32?
 }
 
 // Type aliases

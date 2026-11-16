@@ -128,6 +128,38 @@ pub fn CallbackParams::get(self : CallbackParams, key : String) -> String? {
 }
 
 ///|
+/// 回调以 query / form 参数直接携带平台错误时的统一读取。
+///
+/// 覆盖 RFC 6749 §4.1.2.1 授权错误响应三参数：`error` / `error_description` /
+/// `error_uri`（后者仅在出现时并入消息）。Google / GitHub 在 query、Apple 在
+/// `form_post` body、飞书在 query（`error=access_denied`）均以此形态回传「用户拒绝
+/// 授权」等失败结果。
+///
+/// `error` 非空 → `Some(ProviderError(error, 描述[; uri]))`；否则 `None`。
+///
+/// 🔴 各 provider 必须在 **`state` 校验通过后、读取授权码之前** 调用本方法：
+/// 用户拒绝授权必须归一为 `provider_error`（可定位的平台语义），
+/// 而不是误报为 `missing_param`（与真实丢参无法区分）。
+pub fn CallbackParams::provider_error(self : CallbackParams) -> AuthError? {
+  let code = match self.params.get("error") {
+    Some(c) => if c.length() > 0 { c } else { return None }
+    None => return None
+  }
+  let mut msg = match self.params.get("error_description") {
+    Some(d) => d
+    None => ""
+  }
+  match self.params.get("error_uri") {
+    Some(u) =>
+      if u.length() > 0 {
+        msg = if msg.length() > 0 { msg + "; " + u } else { u }
+      }
+    None => ()
+  }
+  Some(ProviderError(code, msg))
+}
+
+///|
 /// `begin_*` 的返回值。临时态随返回值交给调用方持有（零状态）。
 pub(all) struct AuthStart {
   /// 供浏览器跳转的授权 URL。

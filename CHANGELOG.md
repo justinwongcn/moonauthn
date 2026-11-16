@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- **core / 四 provider：回调错误参数归一**（RFC 6749 §4.1.2.1）。`CallbackParams::provider_error()`
+  统一读取回调 `error` / `error_description` / `error_uri`；google / apple / github / feishu 的
+  `complete_auth` 在 **state 校验通过后、读取授权码之前** 接入——用户拒绝授权
+  （Google/GitHub/飞书 query、Apple form_post）现在归一为 `ProviderError`（可定位的平台
+  语义），不再误报为 `missing_param`（此前与真实丢参不可区分）。Google 同时把
+  「先校验 state 再处理 code」的顺序与官方回调契约对齐。
 - **oidc：id_token 验签增加算法白名单**（RFC 8725 §3.1）。`IdTokenExpectations` 新增
   `algorithms : Array[String]` 字段：非空时严格比对 token 头声明的 `alg`（不命中即
   `UnsupportedAlg`），空数组 = 接受实现支持的 RS/ES 族（仍绑死 JWKS 公钥）。
@@ -40,6 +46,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   L1 实测（2026-10-12，零凭据探测）确认 GitHub 对「有效 client_id + 无效授权码」返回
   **HTTP 200 + 错误体**（`{"error":"bad_verification_code",...}`）——此前会降级为
   信息量更低的 `ParseError`。JSON/form 两形态均覆盖。
+- 🔴 **alipay：身份键改 `open_id` 优先、`user_id` 兜底**（2026-11-17 按官方口径修正，
+  见下方 Added）。此前 `alipay_identity` 只取 `user_id` 且平台文档称其为「稳定用户标识」；
+  官方已宣布「新商户建议使用 `open_id` 替代，`user_id` 字段未来计划逐步回收（二选一）」
+  ——在回收路径上的标识上建绑定映射会随官方迁移失效。`alipay_identity` 签名改为
+  `(userinfo, fallback_open_id, fallback_user_id)`；`uid_kind` 保持 `Stable`。
+- **github：邮箱选择补回退档**——`/user/emails` 无 `primary` 项时取首个 `verified=true`
+  （此前无 primary 直接返回 `None`；GitHub 私密邮箱场景列表常无 primary）。
+  规则：`primary && verified` 优先 → 首个 `verified` → 只有未验证邮箱时不采用。
 - 🔴 **feishu：token 响应按真实 v2 形态解析**（信封优先）。真实
   `POST /authen/v2/oauth/token` 成功响应是 `{code,msg,data:{access_token,...}}`
   信封壳（与官方 Go/Node SDK 模型一致）；此前按顶层平铺解析，默认配置对真实网关
@@ -67,6 +81,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **wechat：小程序登录 `code2Session`**（2026-11-17 官方文档核实）。`wechat_code2_session(config, js_code)`
+  → `WeChatCode2Session { identity, session_key }`：身份与网站链路**同一归一口径**
+  （`provider = "wechat"`，`unionid` 优先 `Stable` → `openid` 兜底 `Degraded`，同一开放平台
+  账号下的网站 + 小程序可用 `unionid` 关联）；`session_key` 走**专用字段**返回且不进
+  `extra`（敏感密钥防误落日志），错误先查 `errcode`（`40029`/`40226`/`45011`/`-1` →
+  `ProviderError`）。小程序链路无浏览器回调、无 state、无 refresh，不经 `WeChatProvider`
+  trait；端点可经 `with_code2_session_endpoint` 覆盖。
+- **core：`CallbackParams::provider_error()`**——回调错误参数（`error` / `error_description` /
+  `error_uri`）的统一读取口（详见 Security 节）。
 - **contract：`ChallengeStore` 参数化契约 `run_store`**——下游最可能替换的 seam
   （内存 → Redis）现在有可复跑的断言集（一次性 / peek 不消费 / TTL 边界 / 覆盖写 /
   键隔离）；`MemoryChallengeStore` 已接入。

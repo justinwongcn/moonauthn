@@ -388,3 +388,28 @@ async test "feishu: empty union_id falls back to open_id as Degraded" {
     @core.UidKind::Stable => abort("empty union_id must not be Stable")
   }
 }
+
+// ════════ 回调错误参数（用户拒绝授权）════════
+
+///|
+/// 飞书失败回调形如 `?error=access_denied&state=STATE`——state 通过后必须归一为
+/// `provider_error`，而非误报 `missing_param`（官方回调文档形态）。
+async test "feishu: callback error=access_denied is normalized to provider_error" {
+  let config = feishu_fixed_config([])
+  let start = @feishu.begin_auth(config, {
+    state: Some("st-1"),
+    code_verifier: Some("verifier-1"),
+    nonce: None,
+  })
+  let callback = @core.CallbackParams::from_query_string(
+    "error=access_denied&state=st-1",
+  )
+  let outcome = try {
+    let _ = @feishu.complete_auth(config, callback, start)
+    "no-error"
+  } catch {
+    e => @core.auth_error_code(e) + "|" + @core.auth_error_message(e)
+  }
+  assert_true(outcome.has_prefix("provider_error|"))
+  assert_true(outcome.contains("access_denied"))
+}

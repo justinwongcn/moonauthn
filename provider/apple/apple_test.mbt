@@ -294,3 +294,29 @@ async test "apple: missing id_token is rejected as missing_param" {
   }
   @debug.assert_eq(code, "missing_param")
 }
+
+// ════════ form_post 错误字段（用户拒绝授权）════════
+
+///|
+/// Apple 失败回调经 `form_post` body 传错误字段——state 通过后必须归一为
+/// `provider_error`，而非误报 `missing_param`。
+async test "apple: form_post error field is normalized to provider_error" {
+  let config = apple_fixed_config()
+  let start = @apple.begin_auth(config, {
+    state: Some("st-1"),
+    code_verifier: Some("verifier-1"),
+    nonce: Some("nonce-1"),
+  })
+  let callback = @apple.apple_callback(
+    "error=access_denied&error_description=user%20cancelled&state=st-1",
+  )
+  let outcome = try {
+    let _ = @apple.complete_auth(config, callback, start)
+    "no-error"
+  } catch {
+    e => @core.auth_error_code(e) + "|" + @core.auth_error_message(e)
+  }
+  assert_true(outcome.has_prefix("provider_error|"))
+  assert_true(outcome.contains("access_denied"))
+  assert_true(outcome.contains("user cancelled"))
+}

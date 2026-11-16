@@ -1,7 +1,7 @@
 # 微信（WeChat）接入
 
 > 子包：`justinwongcn/moonauth/provider/wechat`
-> 协议：微信开放平台 / 公众号网页授权（`snsapi_login` / `snsapi_userinfo`）。
+> 协议：微信开放平台 / 公众号网页授权（`snsapi_login` / `snsapi_userinfo`）+ **小程序登录**（`code2Session`）。
 
 ## 1. 申请步骤
 
@@ -22,9 +22,10 @@ let config = @wechat.WeChatConfig::new("AppID", "AppSecret", "https://your.app/a
 | `authorization_endpoint` | `https://open.weixin.qq.com/connect/qrconnect` |
 | `token_endpoint` | `https://api.weixin.qq.com/sns/oauth2/access_token` |
 | `userinfo_endpoint` | `https://api.weixin.qq.com/sns/userinfo` |
+| `code2_session_endpoint` | `https://api.weixin.qq.com/sns/jscode2session` |
 | `scope` | `snsapi_login` |
 
-链式覆盖：`with_scope(String)` / `with_endpoints(authz, token, userinfo)` / `with_http` / `with_clock` / `with_random`。
+链式覆盖：`with_scope(String)` / `with_endpoints(authz, token, userinfo)` / `with_code2_session_endpoint(String)` / `with_http` / `with_clock` / `with_random`。
 
 ## 3. 用法
 
@@ -51,6 +52,32 @@ let identity = @wechat.complete_auth(config, callback, start)
 > 因此旧写法 `@wechat.wechat_identity(userinfo_json, fallback_openid)` **仍能编译**——
 > 但那样会**丢掉 token 侧的 `unionid`**，触发下面 🔴 的「低估为 `Degraded`」陷阱。
 > **推荐始终传第三个参数**：`fallback_unionid = token.unionid`。
+
+### 小程序登录（`code2Session`，2026-11-17 新增）
+
+小程序链路与网站扫码完全不同：**无浏览器回调、无 `state`、无 refresh token**。小程序端
+`wx.login()` 取得临时 `code`（约 5 分钟有效）后交服务端直接换身份。端点与响应已按官方
+文档核实（2026-11-17）：`GET /sns/jscode2session?appid=&secret=&js_code=&grant_type=authorization_code`，
+官方注明**只能在服务端调用**。
+
+```moonbit
+// 小程序端把 wx.login() 的 code 发给你的服务端后：
+let result = @wechat.wechat_code2_session(config, js_code)
+let identity = result.identity      // provider = "wechat"，与网站链路同一归一口径
+let session_key = result.session_key // 微信会话密钥，服务端专用
+```
+
+- **身份主键与网站链路完全一致**：`unionid` 优先（`Stable`）→ `openid` 兜底（`Degraded`）。
+  同一开放平台账号下的网站 + 小程序可用 `unionid` 关联同一用户；缺 `unionid` 时由调用方
+  依据 `Degraded` 决定绑定策略。
+- 🔴 **`session_key` 是微信的会话密钥（解密用户数据用），不是登录态**：只允许保存在服务端，
+  绝不返回小程序前端 / 浏览器，不写入日志；每次 `code2Session` 都返回**新的** `session_key`
+  （自动轮换，怀疑泄露时重新登录即可）；不需要解密用户数据时可完全不持久化。
+  库把它放**专用字段**返回，**不进** `identity.extra`——避免调用方把 `extra` 当普通元数据
+  记录时意外落日志。
+- **错误口径**：先查 `errcode`（`40029` code 无效 / `40226` 高风险用户拦截 / `45011` 分钟级
+  频控 / `-1` 系统繁忙），非零即 `ProviderError`——HTTP 仍可能是 200。
+- 小程序登录不返回 refresh token，不存在刷新链路。
 
 ## 4. 🔴 踩坑点（微信是**顺序强校验**的重灾区）
 
@@ -80,4 +107,5 @@ let identity = @wechat.complete_auth(config, callback, start)
 - 严格顺序授权 URL：`provider/wechat/url.mbt`
 - 配置：`provider/wechat/config.mbt`
 - token / userinfo 解析：`provider/wechat/parse.mbt`、`provider/wechat/userinfo.mbt`
+- 小程序登录：`provider/wechat/miniprogram.mbt`
 - facade：`provider/wechat/facade.mbt`

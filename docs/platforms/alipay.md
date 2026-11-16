@@ -58,10 +58,19 @@ let identity = @alipay.complete_auth(config, callback, start)
 - **原值不 URL 编码**：签名串里用**原始值**拼接；URL 编码只在**发送时**对整串做，**不参与签名**。
 - **签名算法是 `RSA2`**（即 SHA256withRSA），签名结果 **Base64** 后放入 `sign`。
 - **公共参数固定**：`format=JSON`、`charset=utf-8`、`sign_type=RSA2`、`version=1.0`（库已按官方示例拼装）。
-- **换 token 与取用户是两次网关调用**：`alipay.system.oauth.token` → `access_token`（含 `user_id`），
-  再 `alipay.user.info.share` 取详情。`user_id` 是支付宝侧的稳定用户标识。
+- **换 token 与取用户是两次网关调用**：`alipay.system.oauth.token` → `access_token`（含 `open_id` / `user_id`），
+  再 `alipay.user.info.share` 取详情。
+- 🔴 **身份键：`open_id` 优先、`user_id` 兜底**（2026-11-17 按官方口径修正）。支付宝官方说明：
+  「新商户建议使用 `open_id` 替代该字段；对于新商户，`user_id` 字段未来计划逐步回收，存量商户可继续使用」，
+  两字段在响应中**二选一**。库的 `uid` 取值：`open_id`（userinfo / token 任一带出即采用）→ `user_id` →
+  都缺失时 `ParseError`。`uid_kind` 恒为 `Stable`（平台保证在本应用内稳定，与 QQ `openid` 同类）；
+  跨应用关联需 `union_id`（仅商家应用分组等条件下返回，**返回条件待真实应用验证，本库暂不读取**）。
+  ⚠️ 存量应用若曾以 `user_id` 建立绑定，切换/升级应用形态后标识可能变化——绑定策略由调用方负责。
 - **`auth_code` vs `code`**：回调可能给旧版 `auth_code` 或新版 `code`，库两者都接受。
-- **错误体**：响应 JSON 里若有 `error_response`，库归一为 `ProviderError`。
+- **错误体**：响应 JSON 里若有 `error_response`，库归一为 `ProviderError`（`sub_code` / `sub_msg` 保留在消息里）。
+- **`state` 回转风险**（调研核对补充）：官方页面强调的回调核心参数是 `auth_code` / `app_id` / `scope`；
+  `state` 的实际回转行为必须用真实网站应用验证——若真实环境不回转 `state`，库的默认硬校验会
+  直接 `MissingParam` / `StateMismatch`。生产可用前必须实测（L2 清单项）。
 
 ## 5. 相关源码
 

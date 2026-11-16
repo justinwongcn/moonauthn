@@ -14,7 +14,7 @@ pub fn base64url_decode(String) -> Bytes raise @core.AuthError
 
 pub fn base64url_encode(Bytes) -> String
 
-pub fn generate_code_verifier(&@core.RandomSource, byte_len? : Int) -> String raise @core.AuthError
+pub fn generate_code_verifier(&@core.RandomSource, byte_len? : Int32) -> String raise @core.AuthError
 
 pub fn s256_challenge(String) -> String
 

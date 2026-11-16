@@ -36,3 +36,50 @@ test "provider descriptors are queryable through the public API" {
 test "auth error code helper is public" {
   @debug.assert_eq(@core.auth_error_code(@core.RandomUnavailable), "random_unavailable")
 }
+
+// ════════ 回调错误参数（provider_error）════════
+
+///|
+/// `error` + `error_description` → `ProviderError(error, 描述)`。
+test "callback error params yield provider_error" {
+  let cb = @core.CallbackParams::from_query_string(
+    "error=access_denied&error_description=user%20denied&state=st",
+  )
+  match cb.provider_error() {
+    Some(@core.ProviderError(code, msg)) => {
+      @debug.assert_eq(code, "access_denied")
+      @debug.assert_eq(msg, "user denied")
+    }
+    _ => abort("expected ProviderError")
+  }
+}
+
+///|
+/// `error_uri` 出现时并入消息（GitHub 形态）。
+test "callback error_uri is folded into the message" {
+  let cb = @core.CallbackParams::from_query_string(
+    "error=verification_failed&error_description=bad%20sig&error_uri=https://docs.example/e",
+  )
+  match cb.provider_error() {
+    Some(@core.ProviderError(code, msg)) => {
+      @debug.assert_eq(code, "verification_failed")
+      @debug.assert_eq(msg, "bad sig; https://docs.example/e")
+    }
+    _ => abort("expected ProviderError")
+  }
+}
+
+///|
+/// 无 `error` / `error` 为空串 → `None`（不误伤正常成功回调）。
+test "callback without error params yields None" {
+  let ok = @core.CallbackParams::from_query_string("code=c&state=st")
+  match ok.provider_error() {
+    None => ()
+    Some(_) => abort("expected None for a callback without error params")
+  }
+  let empty = @core.CallbackParams::from_query_string("error=&state=st")
+  match empty.provider_error() {
+    None => ()
+    Some(_) => abort("expected None for an empty error param")
+  }
+}

@@ -62,14 +62,7 @@ pub fn wechat_identity(
     Some(String(s)) => if s.length() > 0 { Some(s) } else { token_unionid }
     _ => token_unionid
   }
-  let uid = match unionid {
-    Some(u) => u
-    None => openid
-  }
-  let kind = match unionid {
-    Some(_) => @core.UidKind::Stable
-    None => @core.UidKind::Degraded
-  }
+  let (uid, kind) = wechat_pick_uid(unionid, openid)
   let nickname = match m.get("nickname") {
     Some(String(s)) => Some(s)
     _ => None
@@ -101,5 +94,18 @@ fn non_empty_opt(v : String?) -> String? {
   match v {
     Some(s) => if s.length() > 0 { Some(s) } else { None }
     None => None
+  }
+}
+
+///|
+/// **uid 兜底链**（网站 userinfo 与小程序 `code2Session` 共用）：
+/// `unionid` 存在 → `(unionid, Stable)`；否则 → `(openid, Degraded)`。
+fn wechat_pick_uid(
+  unionid : String?,
+  openid : String,
+) -> (String, @core.UidKind) {
+  match unionid {
+    Some(u) => (u, @core.UidKind::Stable)
+    None => (openid, @core.UidKind::Degraded)
   }
 }

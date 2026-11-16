@@ -67,7 +67,7 @@ pub fn run_webauthn(() -> &@core.WebAuthnVerifier) -> Array[CaseResult]
 
 pub fn run_webauthn_with(() -> &@core.WebAuthnVerifier, WebAuthnFixtures) -> Array[CaseResult]
 
-pub fn status_response(Int, String) -> @core.HttpResponse
+pub fn status_response(Int32, String) -> @core.HttpResponse
 
 pub fn token_exchange_request() -> @core.TokenExchangeRequest
 
@@ -99,16 +99,16 @@ pub struct MockHttpClient {
 pub fn MockHttpClient::new(Array[@core.HttpResponse]) -> Self
 pub fn MockHttpClient::push_response(Self, @core.HttpResponse) -> Unit
 pub fn MockHttpClient::recorded_requests(Self) -> Array[@core.HttpRequest]
-pub fn MockHttpClient::remaining(Self) -> Int
+pub fn MockHttpClient::remaining(Self) -> Int32
 pub async fn MockHttpClient::send(Self, @core.HttpRequest) -> @core.HttpResponse raise @core.AuthError
 pub impl @core.HttpClient for MockHttpClient
 
 pub(all) struct WebAuthnFixtures {
   registration : @core.RegistrationInput
   expected_credential_id : Bytes
-  expected_registration_sign_count : Int
+  expected_registration_sign_count : Int32
   assertion : @core.AssertionInput
-  expected_assertion_sign_count : Int
+  expected_assertion_sign_count : Int32
 }
 
 // Type aliases

@@ -27,6 +27,14 @@ let default_token_endpoint : String = "https://api.weixin.qq.com/sns/oauth2/acce
 let default_userinfo_endpoint : String = "https://api.weixin.qq.com/sns/userinfo"
 
 ///|
+/// 默认小程序登录凭证校验端点（`code2Session`，官方注明**仅服务端**可调用）。
+///
+/// 端点经官方文档核实（2026-11-17）：
+/// `GET https://api.weixin.qq.com/sns/jscode2session`，返回 `openid` /
+/// `session_key` / 条件 `unionid` / `errcode`、`errmsg`。
+let default_code2_session_endpoint : String = "https://api.weixin.qq.com/sns/jscode2session"
+
+///|
 /// 默认授权作用域（PC 扫码登录用 `snsapi_login`；公众号内网页用 `snsapi_userinfo`）。
 let default_scope : String = "snsapi_login"
 
@@ -40,6 +48,8 @@ pub struct WeChatConfig {
   authorization_endpoint : String
   token_endpoint : String
   userinfo_endpoint : String
+  /// 小程序 `code2Session` 端点（`wechat_code2_session` 使用）。
+  code2_session_endpoint : String
   http : &@core.HttpClient
   clock : &@core.Clock
   random : &@core.RandomSource
@@ -63,6 +73,7 @@ pub fn WeChatConfig::new(
     authorization_endpoint: default_authorization_endpoint,
     token_endpoint: default_token_endpoint,
     userinfo_endpoint: default_userinfo_endpoint,
+    code2_session_endpoint: default_code2_session_endpoint,
     http,
     clock,
     random,
@@ -111,4 +122,13 @@ pub fn WeChatConfig::with_endpoints(
   userinfo_endpoint : String,
 ) -> WeChatConfig {
   { ..self, authorization_endpoint, token_endpoint, userinfo_endpoint }
+}
+
+///|
+/// 覆盖小程序 `code2Session` 端点（返回新实例）。
+pub fn WeChatConfig::with_code2_session_endpoint(
+  self : WeChatConfig,
+  code2_session_endpoint : String,
+) -> WeChatConfig {
+  { ..self, code2_session_endpoint }
 }

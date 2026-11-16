@@ -99,34 +99,70 @@ pub async fn alipay_fetch_userinfo(
 }
 
 ///|
-/// 从用户信息归一身份：`uid = user_id`（`Stable`），昵称 / 头像取自响应。
+/// 从用户信息归一身份：`uid` **优先取 `open_id`**，`user_id` 兜底（`Stable`），
+/// 昵称 / 头像取自响应。
 ///
-/// `fallback_user_id` 为 token 响应里的 `user_id`（userinfo 缺省时兜底）。
+/// 🔴 官方口径（2026-11-17 核验）：新商户建议使用 `open_id` 替代 `user_id`，
+/// `user_id` 字段未来计划逐步回收，存量商户可继续使用——两字段在响应中**二选一**，
+/// 不会同时出现。`uid_kind` 保持 `Stable`：与 QQ `openid` 同类，「平台保证在本应用
+/// 内稳定」；`open_id` / `user_id` 均为应用级标识，跨应用关联需 `union_id`
+/// （仅商家应用分组等条件下返回，返回条件待真实应用验证，本库暂不读取）。
+///
+/// `fallback_open_id` / `fallback_user_id` 为 token 响应里的对应字段
+/// （userinfo 缺省时兜底；`open_id` 优先级全局高于 `user_id`）。
 pub fn alipay_identity(
   userinfo : Map[String, String],
+  fallback_open_id : String,
   fallback_user_id : String,
 ) -> @core.ExternalIdentity raise @core.AuthError {
+  let open_id = match userinfo.get("open_id") {
+    Some(s) =>
+      if s.length() > 0 {
+        Some(s)
+      } else {
+        alipay_non_empty(fallback_open_id)
+      }
+    None => alipay_non_empty(fallback_open_id)
+  }
   let user_id = match userinfo.get("user_id") {
     Some(s) =>
       if s.length() > 0 {
-        s
+        Some(s)
       } else {
-        fallback_user_id
+        alipay_non_empty(fallback_user_id)
       }
-    None => fallback_user_id
+    None => alipay_non_empty(fallback_user_id)
   }
-  if user_id.length() == 0 {
-    raise @core.ParseError("moonauth: alipay response has no user_id")
+  let uid = match open_id {
+    Some(s) => s
+    None =>
+      match user_id {
+        Some(s) => s
+        None =>
+          raise @core.ParseError(
+            "moonauth: alipay response has no open_id/user_id",
+          )
+      }
   }
   {
     provider: "alipay",
-    uid: user_id,
+    uid,
     uid_kind: @core.UidKind::Stable,
     email: None,
     email_verified: false,
     display_name: userinfo.get("nick_name"),
     avatar: userinfo.get("avatar"),
     extra: userinfo,
+  }
+}
+
+///|
+/// `String` → 非空才保留（空串视为缺失）。
+fn alipay_non_empty(s : String) -> String? {
+  if s.length() > 0 {
+    Some(s)
+  } else {
+    None
   }
 }
 

@@ -12,7 +12,7 @@ import {
 // Types and methods
 pub(all) struct GetrandomSource {
 }
-pub fn GetrandomSource::bytes(Self, Int) -> Bytes raise @core.AuthError
+pub fn GetrandomSource::bytes(Self, Int32) -> Bytes raise @core.AuthError
 pub fn GetrandomSource::new() -> Self
 pub impl @core.RandomSource for GetrandomSource
 

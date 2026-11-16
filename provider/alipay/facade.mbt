@@ -89,12 +89,16 @@ pub impl AlipayProvider for DefaultAlipayProvider with fn complete_auth(
       }
     None => raise @core.ParseError("moonauth: alipay token response missing access_token")
   }
+  let fallback_open_id = match token.get("open_id") {
+    Some(u) => u
+    None => ""
+  }
   let fallback_user_id = match token.get("user_id") {
     Some(u) => u
     None => ""
   }
   let userinfo = alipay_fetch_userinfo(self.config, access_token)
-  alipay_identity(userinfo, fallback_user_id)
+  alipay_identity(userinfo, fallback_open_id, fallback_user_id)
 }
 
 ///|
