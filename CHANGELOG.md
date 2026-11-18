@@ -11,7 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **core / 11 provider：空授权码 fail-closed**（黑客审计 E1，JEV 确认 0.992；契约
   §3.2.5「授权码存在且**长度合理**」）。新增 `CallbackParams::required_non_empty`：
-  全部 backend 的 `code` / `auth_code` / `id_token` / `state` 提取统一改用——空字符串
+  全部 backend 的 `code` / `auth_code` / `id_token` 提取统一改用（`state` 空串经
+  `StateMismatch` 天然拦截，未改提取）——空字符串
   此前会通过「存在性检查」并发起注定失败的出站 token 请求，现归一为 `missing_param`。
   支付宝 `auth_code`/`code` 双形态保留非空回退语义。
 - **qq / wechat / discord / oidc：空标识符拒绝**（黑客审计 E2，JEV 确认 0.979；契约
@@ -27,8 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **totp：验证窗口改「仅回看」，不再接受未来时间步**（黑客审计第 2 轮，JEV 确认 0.993）。
   `verify` 此前为 `±window` 对称——T=29 校验 step1 的码被接受（RFC 6238 附录 B 向量实测）。
   接受未来步把在线爆破窗口从 2 步扩大到 3 步、并接受预先生成的未来码，与实现契约
-  §6.6.4（「校验当前时间步和至多一个前一时间步」）及 OWASP MFA 口径冲突。现仅回看
-  （当前 + 前 `window` 步）。
+  §6.6.4（「校验当前时间步和至多一个前一时间步」）及 RFC 6238 §5.2（比较过去时间戳、
+  网络延迟至多一个时间步）冲突。现仅回看（当前 + 前 `window` 步）。
 - **qq：`client_id` 绑定校验**（黑客审计第 1 轮，JEV 确认 0.986）。`qq_parse_openid` 现在
   校验 `me` 响应携带的 `client_id`：与配置 appid 不一致（或非字符串）→
   `ProviderError("client_id_mismatch", ...)`——防他应用 openid 混入本应用身份绑定的混淆

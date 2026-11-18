@@ -74,9 +74,11 @@ let ok = svc.verify_at(secret, code, 59L)      // 指定时间戳（确定性测
   无提前返回（长度不同仍立即返回，但 TOTP 口令长度固定，不构成泄漏）。
 - **漂移窗口（仅回看）**：在 `at_unix` 的**当前与至多前 `window` 个时间步**内逐一比对；
   `window = 0` 仅当前步有效。`window < 0` 抛 `InvalidInput`。窗口外 / 为空的时间戳
-  （`at_unix − k·period < 0`）直接跳过。🔴 **不接受未来步**（2026-11-18 黑客审计修正，
-  对齐实现契约 §6.6.4 与 OWASP 口径）——此前为 `±window` 对称，会把爆破窗口扩大到 3 步
-  并接受预先生成的未来码。
+  （`at_unix − k·period < 0`）直接跳过。🔴 **不接受未来步**（2026-11-18 黑客审计修正）——此前为 `±window` 对称，会把爆破窗口
+  扩大到 3 步并接受预先生成的未来码。依据：实现契约 §6.6.4（「校验当前时间步和至多一个
+  前一时间步」）与 **RFC 6238 §5.2** 原文（「compare OTPs … with the **past** timestamps
+  within the transmission delay」「at most **one** time step as the network delay」）；
+  OWASP WSTG 亦指「窗口应尽可能小」。
 
 ## 6. 恢复码
 
