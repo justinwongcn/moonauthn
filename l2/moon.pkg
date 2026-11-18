@@ -1,0 +1,21 @@
+import {
+  "justinwongcn/moonauth/core" @core,
+  "justinwongcn/moonauth/provider/google" @google,
+  "justinwongcn/moonauth/provider/microsoft" @microsoft,
+  "justinwongcn/moonauth/provider/github" @github,
+  "justinwongcn/moonauth/provider/discord" @discord,
+  "justinwongcn/moonauth/provider/x" @x,
+  "justinwongcn/moonauth/provider/dingtalk" @dingtalk,
+  "justinwongcn/moonauth/provider/feishu" @feishu,
+  "justinwongcn/moonauth/provider/alipay" @alipay,
+  "justinwongcn/moonauth/provider/wechat" @wechat,
+  "justinwongcn/moonauth/provider/qq" @qq,
+  "moonbitlang/core/json" @json,
+  "moonbitlang/core/debug",
+  "moonbitlang/async",
+  "moonbitlang/async/fs" @async_fs,
+}
+
+options(supported_targets: "+native")
+
+pkgtype(kind: "executable")

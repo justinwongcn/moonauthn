@@ -1,0 +1,62 @@
+{
+  "platform": "google",
+  "timeout_seconds": 600,
+  "google": {
+    "client_id": "xxx.apps.googleusercontent.com",
+    "client_secret": "",
+    "redirect_uri": "http://localhost:9876/callback"
+  },
+  "microsoft": {
+    "client_id": "xxx",
+    "client_secret": "xxx",
+    "redirect_uri": "http://localhost:9876/callback",
+    "tenant": "organizations",
+    "allowed_tenant_ids": []
+  },
+  "github": {
+    "client_id": "xxx",
+    "client_secret": "xxx",
+    "redirect_uri": "http://localhost:9876/callback"
+  },
+  "discord": {
+    "client_id": "xxx",
+    "client_secret": "xxx",
+    "redirect_uri": "http://localhost:9876/callback"
+  },
+  "x": {
+    "client_id": "xxx",
+    "redirect_uri": "http://localhost:9876/callback"
+  },
+  "dingtalk": {
+    "client_id": "xxx（AppKey）",
+    "client_secret": "xxx（AppSecret）",
+    "redirect_uri": "http://localhost:9876/callback"
+  },
+  "feishu": {
+    "client_id": "xxx（App ID）",
+    "client_secret": "xxx（App Secret）",
+    "redirect_uri": "http://localhost:9876/callback"
+  },
+  "alipay": {
+    "app_id": "沙箱应用 appid",
+    "private_key_pem": "-----BEGIN RSA PRIVATE KEY-----\n应用私钥\n-----END RSA PRIVATE KEY-----",
+    "redirect_uri": "http://localhost:9876/callback",
+    "gateway": "https://openapi-sandbox.dl.alipay.com/gateway.do",
+    "authorize": "https://openauth-sandbox.dl.alipaydev.com/oauth2/publicAppAuthorize.htm",
+    "scope": "auth_user"
+  },
+  "wechat": {
+    "client_id": "测试号 appID",
+    "client_secret": "测试号 appsecret",
+    "redirect_uri": "http://127.0.0.1:9876/callback",
+    "authorize": "https://open.weixin.qq.com/connect/oauth2/authorize",
+    "token": "https://api.weixin.qq.com/sns/oauth2/access_token",
+    "userinfo": "https://api.weixin.qq.com/sns/userinfo",
+    "scope": "snsapi_userinfo"
+  },
+  "qq": {
+    "client_id": "xxx（AppID）",
+    "client_secret": "xxx（AppKey）",
+    "redirect_uri": "http://localhost:9876/callback"
+  }
+}

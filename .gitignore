@@ -2,5 +2,10 @@
 _build/
 .mooncakes/
 
+# L2 真实回流 harness 的本地凭据与产物（Owner 私有，绝不入库）
+l2/config.json
+l2/callback.txt
+l2/records/
+
 # macOS
 .DS_Store
