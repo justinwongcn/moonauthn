@@ -143,7 +143,12 @@ pub impl @core.TotpPrimitive for StandardTotpPrimitive with fn otpauth_uri(
 }
 
 ///|
-/// 校验一次性口令：在 `at_unix` 的 `±window` 个时间步内逐一比对（恒定时间）。
+/// 校验一次性口令：在 `at_unix` 的**当前与至多前 `window` 个时间步**内逐一比对
+/// （恒定时间）。
+///
+/// 🔴 **仅回看，不接受未来步**（黑客审计第 2 轮确认，JEV 0.993）：此前为 `±window`
+/// 对称——接受未来步会把在线爆破窗口从 2 步扩大到 3 步、并接受「预先生成的未来码」，
+/// 与实现契约 §6.6.4（「校验当前时间步和至多一个前一时间步」）及 OWASP 口径冲突。
 ///
 /// `window < 0` → `InvalidInput`。窗口外/为空的时间戳（`at_unix - k*period < 0`）直接跳过。
 pub impl @core.TotpPrimitive for StandardTotpPrimitive with fn verify(
@@ -162,12 +167,10 @@ pub impl @core.TotpPrimitive for StandardTotpPrimitive with fn verify(
   let mut matched = false
   let mut offset = 0
   while offset <= window {
-    let delta = offset.to_int64()
+    // 🔴 仅回看：`totp_matches` 的语义是 `at = base + delta*period`——**正 delta 是
+    // 未来时间**。故回看必须用负 delta（当前步 + 前 window 步）。
+    let delta = 0L - offset.to_int64()
     if totp_matches(algorithm, secret, code, at_unix, delta, period, digits) {
-      matched = true
-    }
-    if offset != 0 &&
-      totp_matches(algorithm, secret, code, at_unix, 0L - delta, period, digits) {
       matched = true
     }
     offset = offset + 1

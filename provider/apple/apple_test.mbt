@@ -91,7 +91,7 @@ async test "apple: begin_auth uses form_post + PKCE" {
   let config = apple_base_config()
   let start = @apple.begin_auth(config, {
     state: Some("st-1"),
-    code_verifier: Some("verifier-1"),
+    code_verifier: Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"),
     nonce: Some("nonce-1"),
   })
   let url = start.url
@@ -99,7 +99,7 @@ async test "apple: begin_auth uses form_post + PKCE" {
   assert_true(url.contains("response_mode=form_post"))
   assert_true(url.contains("code_challenge_method=S256"))
   assert_true(url.contains("nonce=nonce-1"))
-  @debug.assert_eq(start.code_verifier, Some("verifier-1"))
+  @debug.assert_eq(start.code_verifier, Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"))
 }
 
 // ════════ ES256 client secret ════════
@@ -210,7 +210,7 @@ async test "apple: form_post callback parses into params" {
 async test "apple: complete_auth yields a deterministic identity with first-auth name" {
   let start = @apple.begin_auth(apple_base_config(), {
     state: Some("st-1"),
-    code_verifier: Some("verifier-1"),
+    code_verifier: Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"),
     nonce: Some("nonce-1"),
   })
   // 首次授权额外带 user（通常在 form_post body 里；此处用 from_pairs 直接注入）。
@@ -263,7 +263,7 @@ async test "apple: state mismatch is rejected" {
   let config = apple_fixed_config()
   let start = @apple.begin_auth(config, {
     state: Some("st-1"),
-    code_verifier: Some("verifier-1"),
+    code_verifier: Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"),
     nonce: Some("nonce-1"),
   })
   let cb = @core.CallbackParams::from_query_string("code=c&state=WRONG&id_token=x")
@@ -282,7 +282,7 @@ async test "apple: missing id_token is rejected as missing_param" {
   let config = apple_fixed_config()
   let start = @apple.begin_auth(config, {
     state: Some("st-1"),
-    code_verifier: Some("verifier-1"),
+    code_verifier: Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"),
     nonce: Some("nonce-1"),
   })
   let cb = @core.CallbackParams::from_query_string("code=c&state=st-1")
@@ -304,7 +304,7 @@ async test "apple: form_post error field is normalized to provider_error" {
   let config = apple_fixed_config()
   let start = @apple.begin_auth(config, {
     state: Some("st-1"),
-    code_verifier: Some("verifier-1"),
+    code_verifier: Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"),
     nonce: Some("nonce-1"),
   })
   let callback = @apple.apple_callback(

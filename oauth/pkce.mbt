@@ -163,8 +163,39 @@ fn base64_std_value(c : Int) -> Int {
 /// PKCE `S256` 挑战：`base64url(sha256(code_verifier))`（RFC 7636 §4.2）。
 ///
 /// SHA-256 取自 `1726914517-spec/moon_otp`（其 `sha256` 是纯函数，无第三方类型逃逸）。
-pub fn s256_challenge(code_verifier : String) -> String {
+///
+/// 🔴 **RFC 7636 §4.1 护栏（黑客审计第 1 轮确认）**：本函数是全部 verifier 的
+/// 唯一咽喉点（生成路径已由 `generate_code_verifier` 护栏，**调用方自带**的
+/// verifier 也必须过同一校验）——长度 43~128 字符、字符集仅限 RFC 3986
+/// unreserved（`A-Z a-z 0-9 - . _ ~`）。不合规即 `InvalidInput`：否则错误会
+/// 延迟到 token 交换时才由 provider 端暴露（且可能是不友好的远端报错）。
+pub fn s256_challenge(
+  code_verifier : String,
+) -> String raise @core.AuthError {
+  validate_code_verifier(code_verifier)
   base64url_encode(@otp.sha256(@utf8.encode(code_verifier)[:]))
+}
+
+///|
+/// RFC 7636 §4.1 `code_verifier` 护栏：长度 43~128 字符、字符集仅限
+/// RFC 3986 unreserved（与 `is_unreserved` 同集）。不合规即 `InvalidInput`。
+pub fn validate_code_verifier(
+  code_verifier : String,
+) -> Unit raise @core.AuthError {
+  let len = code_verifier.length()
+  if len < 43 || len > 128 {
+    raise @core.InvalidInput(
+      "moonauth: PKCE code_verifier length must be 43..=128 chars (RFC 7636), got \{len}",
+    )
+  }
+  let bytes = @utf8.encode(code_verifier)
+  for b in bytes {
+    if !is_unreserved(b.to_int()) {
+      raise @core.InvalidInput(
+        "moonauth: PKCE code_verifier contains a character outside the RFC 7636 unreserved set (A-Z a-z 0-9 - . _ ~)",
+      )
+    }
+  }
 }
 
 ///|
@@ -172,7 +203,10 @@ pub fn s256_challenge(code_verifier : String) -> String {
 ///
 /// 这里用普通相等即可——`code_verifier` 是调用方自己生成的秘密，比对不涉及
 /// 「按字节泄露秘密」的时序攻击面（与 MAC 比较不同）。
-pub fn verify_s256(code_verifier : String, expected_challenge : String) -> Bool {
+pub fn verify_s256(
+  code_verifier : String,
+  expected_challenge : String,
+) -> Bool raise @core.AuthError {
   s256_challenge(code_verifier) == expected_challenge
 }
 

@@ -75,7 +75,7 @@ async test "dingtalk(A): default config assembles the CN authorization URL" {
   )
   let secrets : @core.SuppliedSecrets = {
     state: Some("st-123"),
-    code_verifier: Some("verifier-1"),
+    code_verifier: Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"),
     nonce: None,
   }
   let start = @dingtalk.begin_auth(config, secrets)
@@ -88,7 +88,7 @@ async test "dingtalk(A): default config assembles the CN authorization URL" {
   assert_true(url.contains("state=st-123"))
   assert_true(url.contains("code_challenge_method=S256"))
   @debug.assert_eq(start.state, "st-123")
-  @debug.assert_eq(start.code_verifier, Some("verifier-1"))
+  @debug.assert_eq(start.code_verifier, Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"))
   // 钉钉无 OIDC id_token，无 nonce 语义。
   @debug.assert_eq(start.nonce, None)
 }
@@ -110,7 +110,7 @@ async test "dingtalk(B): complete_auth yields a deterministic identity" {
   ).with_http(client).with_clock(clock)
   let start = @dingtalk.begin_auth(config, {
     state: Some("st-123"),
-    code_verifier: Some("verifier-1"),
+    code_verifier: Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"),
     nonce: None,
   })
   let callback = @core.CallbackParams::from_query_string(
@@ -144,7 +144,7 @@ async test "dingtalk(B): complete_auth yields a deterministic identity" {
   assert_true(token_body.contains("\"clientSecret\":\"secret-1\""))
   assert_true(token_body.contains("\"grantType\":\"authorization_code\""))
   assert_true(token_body.contains("\"code\":\"auth-code-1\""))
-  assert_true(token_body.contains("\"codeVerifier\":\"verifier-1\""))
+  assert_true(token_body.contains("\"codeVerifier\":\"verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~\""))
   // 请求 1：userinfo —— 自定义头鉴权（非 Authorization）+ unionId=true。
   let me_req = reqs[1]
   @debug.assert_eq(me_req.url, "mock://me?unionId=true")
@@ -170,7 +170,7 @@ async test "dingtalk: openId-only identity is Degraded" {
   ).with_http(client).with_clock(clock)
   let start = @dingtalk.begin_auth(config, {
     state: Some("st-123"),
-    code_verifier: Some("verifier-1"),
+    code_verifier: Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"),
     nonce: None,
   })
   let callback = @core.CallbackParams::from_query_string(
@@ -192,7 +192,7 @@ async test "dingtalk: state mismatch is rejected" {
   let config = dingtalk_fixed_config([dingtalk_token_ok(), dingtalk_userinfo_ok()])
   let start = @dingtalk.begin_auth(config, {
     state: Some("st-123"),
-    code_verifier: Some("verifier-1"),
+    code_verifier: Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"),
     nonce: None,
   })
   let callback = @core.CallbackParams::from_query_string("code=c&state=WRONG")
@@ -211,7 +211,7 @@ async test "dingtalk: missing code is rejected as missing_param" {
   let config = dingtalk_fixed_config([dingtalk_token_ok(), dingtalk_userinfo_ok()])
   let start = @dingtalk.begin_auth(config, {
     state: Some("st-123"),
-    code_verifier: Some("verifier-1"),
+    code_verifier: Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"),
     nonce: None,
   })
   let callback = @core.CallbackParams::from_query_string("state=st-123")
@@ -236,7 +236,7 @@ async test "dingtalk: token endpoint error is normalized to provider_error" {
   ])
   let start = @dingtalk.begin_auth(config, {
     state: Some("st-123"),
-    code_verifier: Some("verifier-1"),
+    code_verifier: Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"),
     nonce: None,
   })
   let callback = @core.CallbackParams::from_query_string(

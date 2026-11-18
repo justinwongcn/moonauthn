@@ -62,7 +62,7 @@ async test "discord(A): default config assembles the official authorization URL"
   let config = @discord.DiscordConfig::new("client-1", "https://app.example/cb")
   let secrets : @core.SuppliedSecrets = {
     state: Some("st-123"),
-    code_verifier: Some("verifier-1"),
+    code_verifier: Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"),
     nonce: None,
   }
   let start = @discord.begin_auth(config, secrets)
@@ -75,7 +75,7 @@ async test "discord(A): default config assembles the official authorization URL"
   assert_true(url.contains("state=st-123"))
   assert_true(url.contains("code_challenge_method=S256"))
   @debug.assert_eq(start.state, "st-123")
-  @debug.assert_eq(start.code_verifier, Some("verifier-1"))
+  @debug.assert_eq(start.code_verifier, Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"))
   // Discord 无 OIDC id_token，无 nonce 语义。
   @debug.assert_eq(start.nonce, None)
 }
@@ -88,7 +88,7 @@ async test "discord(B): complete_auth yields a deterministic identity" {
   let config = discord_fixed_config([discord_token_ok(), discord_user_ok()])
   let start = @discord.begin_auth(config, {
     state: Some("st-123"),
-    code_verifier: Some("verifier-1"),
+    code_verifier: Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"),
     nonce: None,
   })
   let callback = @core.CallbackParams::from_query_string(
@@ -148,7 +148,7 @@ async test "discord: state mismatch is rejected" {
   let config = discord_fixed_config([discord_token_ok(), discord_user_ok()])
   let start = @discord.begin_auth(config, {
     state: Some("st-123"),
-    code_verifier: Some("verifier-1"),
+    code_verifier: Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"),
     nonce: None,
   })
   let callback = @core.CallbackParams::from_query_string("code=c&state=WRONG")
@@ -167,7 +167,7 @@ async test "discord: missing code is rejected as missing_param" {
   let config = discord_fixed_config([discord_token_ok(), discord_user_ok()])
   let start = @discord.begin_auth(config, {
     state: Some("st-123"),
-    code_verifier: Some("verifier-1"),
+    code_verifier: Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"),
     nonce: None,
   })
   let callback = @core.CallbackParams::from_query_string("state=st-123")
@@ -192,7 +192,7 @@ async test "discord: token endpoint error is normalized to provider_error" {
   ])
   let start = @discord.begin_auth(config, {
     state: Some("st-123"),
-    code_verifier: Some("verifier-1"),
+    code_verifier: Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"),
     nonce: None,
   })
   let callback = @core.CallbackParams::from_query_string(
@@ -289,4 +289,25 @@ async test "discord: default secrets come from the injected RandomSource" {
   })
   @debug.assert_eq(a.state, b.state)
   @debug.assert_eq(a.code_verifier, b.code_verifier)
+}
+
+///|
+/// 🔴 头像 URL 的 uid / hash 必须百分号编码（黑客审计第 2 轮确认修复）：
+/// 异常形态（含 `/` `?`）不得篡改 CDN URL。
+async test "discord: avatar url components are percent-encoded" {
+  let body = "{\"id\":\"12345\",\"global_name\":\"Dev\",\"username\":\"dev\",\"avatar\":\"a_hostile/path?x\"}"
+  let identity = @discord.discord_identity(body)
+  let avatar = match identity.avatar {
+    Some(a) => a
+    None => abort("discord: avatar should be present")
+  }
+  assert_true(avatar.has_prefix("https://cdn.discordapp.com/avatars/12345/"))
+  assert_true(avatar.contains("a_hostile%2Fpath%3Fx"))
+  assert_true(avatar.contains(".gif"))
+  // 正常形态（hex 哈希）不受影响
+  let normal = @discord.discord_identity("{\"id\":\"12345\",\"avatar\":\"abc123\"}")
+  @debug.assert_eq(
+    normal.avatar,
+    Some("https://cdn.discordapp.com/avatars/12345/abc123.png"),
+  )
 }

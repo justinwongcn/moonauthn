@@ -81,7 +81,7 @@ async test "github(A): default config assembles the official authorization URL" 
   let config = @github.GitHubConfig::new("client-1", "https://app.example/cb")
   let secrets : @core.SuppliedSecrets = {
     state: Some("st-123"),
-    code_verifier: Some("verifier-1"),
+    code_verifier: Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"),
     nonce: None,
   }
   let start = @github.begin_auth(config, secrets)
@@ -94,7 +94,7 @@ async test "github(A): default config assembles the official authorization URL" 
   assert_true(url.contains("state=st-123"))
   assert_true(url.contains("code_challenge_method=S256"))
   @debug.assert_eq(start.state, "st-123")
-  @debug.assert_eq(start.code_verifier, Some("verifier-1"))
+  @debug.assert_eq(start.code_verifier, Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"))
   // GitHub 无 OIDC id_token，无 nonce 语义。
   @debug.assert_eq(start.nonce, None)
 }
@@ -107,7 +107,7 @@ async test "github(B): complete_auth yields a deterministic identity" {
   let config = github_fixed_config([github_token_ok(), github_user_with_email()])
   let start = @github.begin_auth(config, {
     state: Some("st-123"),
-    code_verifier: Some("verifier-1"),
+    code_verifier: Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"),
     nonce: None,
   })
   let callback = @core.CallbackParams::from_query_string(
@@ -137,7 +137,7 @@ async test "github: private email falls back to /user/emails primary" {
   ])
   let start = @github.begin_auth(config, {
     state: Some("st-123"),
-    code_verifier: Some("verifier-1"),
+    code_verifier: Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"),
     nonce: None,
   })
   let callback = @core.CallbackParams::from_query_string(
@@ -164,7 +164,7 @@ async test "github: no /user/emails call when /user carries a public email" {
   ).with_http(client).with_clock(clock)
   let start = @github.begin_auth(config, {
     state: Some("st-123"),
-    code_verifier: Some("verifier-1"),
+    code_verifier: Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"),
     nonce: None,
   })
   let callback = @core.CallbackParams::from_query_string(
@@ -190,7 +190,7 @@ async test "github: /user request carries User-Agent header" {
   ).with_http(client).with_clock(clock)
   let start = @github.begin_auth(config, {
     state: Some("st-123"),
-    code_verifier: Some("verifier-1"),
+    code_verifier: Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"),
     nonce: None,
   })
   let callback = @core.CallbackParams::from_query_string(
@@ -218,7 +218,7 @@ async test "github: /user/emails failure does not fail the login" {
   ])
   let start = @github.begin_auth(config, {
     state: Some("st-123"),
-    code_verifier: Some("verifier-1"),
+    code_verifier: Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"),
     nonce: None,
   })
   let callback = @core.CallbackParams::from_query_string(
@@ -238,7 +238,7 @@ async test "github: state mismatch is rejected" {
   let config = github_fixed_config([github_token_ok(), github_user_with_email()])
   let start = @github.begin_auth(config, {
     state: Some("st-123"),
-    code_verifier: Some("verifier-1"),
+    code_verifier: Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"),
     nonce: None,
   })
   let callback = @core.CallbackParams::from_query_string("code=c&state=WRONG")
@@ -257,7 +257,7 @@ async test "github: missing code is rejected as missing_param" {
   let config = github_fixed_config([github_token_ok(), github_user_with_email()])
   let start = @github.begin_auth(config, {
     state: Some("st-123"),
-    code_verifier: Some("verifier-1"),
+    code_verifier: Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"),
     nonce: None,
   })
   let callback = @core.CallbackParams::from_query_string("state=st-123")
@@ -282,7 +282,7 @@ async test "github: token endpoint error is normalized to provider_error" {
   ])
   let start = @github.begin_auth(config, {
     state: Some("st-123"),
-    code_verifier: Some("verifier-1"),
+    code_verifier: Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"),
     nonce: None,
   })
   let callback = @core.CallbackParams::from_query_string(
@@ -390,7 +390,7 @@ async test "github: callback error params are normalized to provider_error" {
   let config = github_fixed_config([])
   let start = @github.begin_auth(config, {
     state: Some("st-1"),
-    code_verifier: Some("verifier-1"),
+    code_verifier: Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"),
     nonce: None,
   })
   let callback = @core.CallbackParams::from_query_string(
@@ -423,7 +423,7 @@ async test "github: falls back to first verified email when no primary" {
   ])
   let start = @github.begin_auth(config, {
     state: Some("st-1"),
-    code_verifier: Some("verifier-1"),
+    code_verifier: Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"),
     nonce: None,
   })
   let cb = @core.CallbackParams::from_query_string("code=CODE1&state=st-1")

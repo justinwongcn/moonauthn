@@ -9,6 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- **totp：验证窗口改「仅回看」，不再接受未来时间步**（黑客审计第 2 轮，JEV 确认 0.993）。
+  `verify` 此前为 `±window` 对称——T=29 校验 step1 的码被接受（RFC 6238 附录 B 向量实测）。
+  接受未来步把在线爆破窗口从 2 步扩大到 3 步、并接受预先生成的未来码，与实现契约
+  §6.6.4（「校验当前时间步和至多一个前一时间步」）及 OWASP MFA 口径冲突。现仅回看
+  （当前 + 前 `window` 步）。
+- **qq：`client_id` 绑定校验**（黑客审计第 1 轮，JEV 确认 0.986）。`qq_parse_openid` 现在
+  校验 `me` 响应携带的 `client_id`：与配置 appid 不一致（或非字符串）→
+  `ProviderError("client_id_mismatch", ...)`——防他应用 openid 混入本应用身份绑定的混淆
+  攻击（与调研契约对支付宝「回调 app_id 与本地一致」同构）。响应缺失 `client_id` 时
+  无法校验、放行（QQ 部分响应形态历史上有缺省，已文档化）。
+- **passkey：credentialId 长度上限**（黑客审计第 1 轮，JEV 确认 0.985）。注册校验结果
+  的 `credential_id` 超过 **1023 字节**（WebAuthn Level 3 上限）一律 `InvalidInput` 拒绝
+  ——此前无上限，攻击者可提交超大凭据交由调用方无限存储。上游 `@webauthn` 不设限，
+  防线在本层收口。
+- **oauth：PKCE `code_verifier` 全路径护栏**（黑客审计第 1 轮，JEV 确认 0.871）。
+  `s256_challenge` 成为唯一咽喉点：长度 43~128 字符 + 字符集限 RFC 3986 unreserved
+  （RFC 7636 §4.1），不合规即 `InvalidInput`——**调用方自带**的 verifier 此前完全
+  不校验，错误延迟到 token 交换才由 provider 端暴露。新增
+  `@oauth.validate_code_verifier`；`s256_challenge` / `verify_s256` 签名增加 `raise`。
 - **core / 四 provider：回调错误参数归一**（RFC 6749 §4.1.2.1）。`CallbackParams::provider_error()`
   统一读取回调 `error` / `error_description` / `error_uri`；google / apple / github / feishu 的
   `complete_auth` 在 **state 校验通过后、读取授权码之前** 接入——用户拒绝授权
@@ -42,6 +61,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **examples/bare-async：回调示例改「直传原始 query」**（黑客审计第 2 轮，JEV 确认 0.975）。
+  `google_complete_from` 此前把**解码后的** `code` / `state` 重新拼接为 query 再交库解析
+  ——平台下发 `code=a%26b`（解码值 `a&b`）时重拼会被二次解析碎裂。现改为 handler 直传
+  原始 query（`req.query_string()` 形状），并从回调参数中取回 `state`（与
+  `docs/migration-from-v1-service.md` 的对照示例一致）。
+- **core：移除 `AsyncHttpClient.timeout_ms` 假超时字段**（黑客审计第 1 轮，JEV 确认 0.958）。
+  该字段可设置但**从未被实现**（上游 `@http.request` 无超时参数，`moonbitlang/async` 无公开
+  spawn/select/cancel 原语可竞速）——调用方设置后毫无作用，且平台端点 TCP 黑洞时请求
+  无限挂起。现移除字段并在 `core/http_async.mbt` 文档化已知限制：**超时职责归调用方的
+  `HttpClient` 实现**（seam 可整体替换，SDK-01），同文档另记响应体无大小上限的上游限制。
+  `AsyncHttpClient::new()` 不再接受 `timeout_ms?` 参数。
 - **oauth：`expires_in` 异常大值归一为 `None` 而非静默截断**（JEV 扫描第 1 轮确认）。
   `parse_int_opt` 此前对 Int64 累加无溢出检查、且 `Int64→Int32` 静默截断——平台返回
   20 位数字或 ≥2^31 的 `expires_in` 时会产出看似合法的错误值；现超出可表示范围一律

@@ -285,18 +285,19 @@ async test "T04 §2.3 otpauth_uri shape" {
 }
 
 ///|
-/// **window 漂移边界**：window=1 时 t-1/t/t+1 通过、t-2 与 t+2 拒绝。
-async test "T04 §2.3 window drift accepts exactly +/-1 and rejects +/-2" {
+/// **window 漂移边界（仅回看，黑客审计第 2 轮修正语义）**：window=1 时
+/// 当前步 / 前一步（at-30）通过；未来步（at+30）与 ±2 一律拒绝。
+async test "T04 §2.3 window drift: lookback-only (current/previous pass, future and ±2 rejected)" {
   let p = t4_totp_sha1_8()
   let seed : Bytes = b"12345678901234567890"
   // t=59 的口令 "94287082"。
   assert_true(p.verify(seed, "94287082", 59L, 1)) // 当前步
-  assert_true(p.verify(seed, "94287082", 89L, 1)) // +1 步 (89=59+30)
-  assert_true(p.verify(seed, "94287082", 29L, 1)) // -1 步 (29=59-30)
+  assert_true(p.verify(seed, "94287082", 89L, 1)) // 前一步（89-30=59，回看命中）
+  assert_false(p.verify(seed, "94287082", 29L, 1)) // 未来步（29+30=59）——仅回看后拒绝
   assert_false(p.verify(seed, "94287082", 119L, 1)) // +2 步
-  // 注意：窗口按「时间步」而非「绝对秒」。t=0 配 window=1 会检查 t=30，
-  // 而 floor(30/30)=1 与 t=59 同属一个 30s 步 → 命中（正确语义，非漏洞）。
-  assert_true(p.verify(seed, "94287082", 0L, 1))
+  // 🔴 窗口按「时间步」而非「绝对秒」：lookback 只检查 at-0/−30 步，t=0 时
+  // 回看命中 t=-30（跳过）→ 不再命中 t=59 的码（旧 ± 实现会经 +30 命中）。
+  assert_false(p.verify(seed, "94287082", 0L, 1))
   assert_true(p.verify(seed, "94287082", 59L, 0)) // window=0 仅当前步
   assert_false(p.verify(seed, "94287082", 89L, 0))
 }

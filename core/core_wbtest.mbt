@@ -220,6 +220,4 @@ test "response header mapping handles an empty header set" {
 test "default I/O implementations can be constructed" {
   let http = AsyncHttpClient::new()
   let _ = http
-  let http2 = AsyncHttpClient::new(timeout_ms=5000)
-  let _ = http2
 }

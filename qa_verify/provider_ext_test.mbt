@@ -49,7 +49,7 @@ async test "ext/github: authorization URL is the official endpoint with PKCE" {
   let config = @github.GitHubConfig::new("cid", "https://app.example/cb")
   let start = @github.begin_auth(config, {
     state: Some("st"),
-    code_verifier: Some("verifier-1"),
+    code_verifier: Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"),
     nonce: None,
   })
   assert_true(start.url.has_prefix("https://github.com/login/oauth/authorize?"))
@@ -65,7 +65,7 @@ async test "ext/discord: authorization URL is the official endpoint with PKCE" {
   let config = @discord.DiscordConfig::new("cid", "https://app.example/cb")
   let start = @discord.begin_auth(config, {
     state: Some("st"),
-    code_verifier: Some("verifier-1"),
+    code_verifier: Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"),
     nonce: None,
   })
   assert_true(start.url.has_prefix("https://discord.com/oauth2/authorize?"))
@@ -82,7 +82,7 @@ async test "ext/discord: authorization URL is the official endpoint with PKCE" {
 async test "ext/dingtalk: CN default endpoint with PKCE" {
   let secrets : @core.SuppliedSecrets = {
     state: Some("st"),
-    code_verifier: Some("verifier-1"),
+    code_verifier: Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"),
     nonce: None,
   }
   let cn = @dingtalk.DingTalkConfig::new("cid", "csec", "https://app.example/cb")
@@ -96,7 +96,7 @@ async test "ext/dingtalk: CN default endpoint with PKCE" {
 async test "ext/feishu: feishu.cn default and larksuite.com lark preset" {
   let secrets : @core.SuppliedSecrets = {
     state: Some("st"),
-    code_verifier: Some("verifier-1"),
+    code_verifier: Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"),
     nonce: None,
   }
   let cn = @feishu.FeishuConfig::new("aid", "asec", "https://app.example/cb")
@@ -128,7 +128,7 @@ async test "ext/four providers: tampered state is always state_mismatch" {
   ).with_clock(@contract.FixedClock::new(1700000000))
   let gh_start = @github.begin_auth(gh_config, {
     state: Some("st"),
-    code_verifier: Some("v"),
+    code_verifier: Some("vabcdefghijklmnopqrstuvwxyz0123456789-._~abcdef"),
     nonce: None,
   })
   let gh_code = try {
@@ -152,7 +152,7 @@ async test "ext/four providers: tampered state is always state_mismatch" {
   ).with_clock(@contract.FixedClock::new(1700000000))
   let dc_start = @discord.begin_auth(dc_config, {
     state: Some("st"),
-    code_verifier: Some("v"),
+    code_verifier: Some("vabcdefghijklmnopqrstuvwxyz0123456789-._~abcdef"),
     nonce: None,
   })
   let dc_code = try {
@@ -176,7 +176,7 @@ async test "ext/four providers: tampered state is always state_mismatch" {
   ).with_clock(@contract.FixedClock::new(1700000000))
   let dt_start = @dingtalk.begin_auth(dt_config, {
     state: Some("st"),
-    code_verifier: Some("v"),
+    code_verifier: Some("vabcdefghijklmnopqrstuvwxyz0123456789-._~abcdef"),
     nonce: None,
   })
   let dt_code = try {
@@ -200,7 +200,7 @@ async test "ext/four providers: tampered state is always state_mismatch" {
   ).with_clock(@contract.FixedClock::new(1700000000))
   let fs_start = @feishu.begin_auth(fs_config, {
     state: Some("st"),
-    code_verifier: Some("v"),
+    code_verifier: Some("vabcdefghijklmnopqrstuvwxyz0123456789-._~abcdef"),
     nonce: None,
   })
   let fs_code = try {

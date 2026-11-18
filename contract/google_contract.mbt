@@ -65,7 +65,7 @@ pub async fn run_google(
 fn google_fixed_secrets() -> @core.SuppliedSecrets {
   {
     state: Some("st-c1"),
-    code_verifier: Some("verifier-1"),
+    code_verifier: Some("vabcdefghijklmnopqrstuvwxyz0123456789-._~abcdef"),
     nonce: Some("nonce-1"),
   }
 }
@@ -83,7 +83,7 @@ async fn google_begin_case(config : @google.GoogleConfig) -> CaseResult {
       url.contains("state=st-c1") &&
       url.contains("nonce=nonce-1") &&
       url.contains("code_challenge_method=S256") &&
-      start.code_verifier == Some("verifier-1") {
+      start.code_verifier == Some("vabcdefghijklmnopqrstuvwxyz0123456789-._~abcdef") {
       CaseResult::pass(name)
     } else {
       CaseResult::fail(name, "unexpected url: " + url)
@@ -163,7 +163,7 @@ async fn google_nonce_case(config : @google.GoogleConfig) -> CaseResult {
   let code = try {
     let secrets : @core.SuppliedSecrets = {
       state: Some("st-c1"),
-      code_verifier: Some("verifier-1"),
+      code_verifier: Some("vabcdefghijklmnopqrstuvwxyz0123456789-._~abcdef"),
       nonce: Some("WRONG-NONCE"),
     }
     let start = @google.begin_auth(config, secrets)

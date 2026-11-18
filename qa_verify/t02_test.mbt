@@ -784,7 +784,7 @@ async test "T02 §3.5 PKCE RFC 7636 appendix B (independent)" {
   )
   @debug.assert_eq(manual, expected_challenge)
   assert_true(@oauth.verify_s256(verifier, expected_challenge))
-  assert_false(@oauth.verify_s256("wrong", expected_challenge))
+  assert_false(@oauth.verify_s256(verifier + "x", expected_challenge))
 }
 
 ///|

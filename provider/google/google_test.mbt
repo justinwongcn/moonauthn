@@ -59,7 +59,7 @@ async test "google(A): default config assembles the official authorization URL" 
   let config = @google.GoogleConfig::new("client-1", "https://app.example/cb")
   let secrets : @core.SuppliedSecrets = {
     state: Some("st-123"),
-    code_verifier: Some("verifier-1"),
+    code_verifier: Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"),
     nonce: Some("nonce-1"),
   }
   let start = @google.begin_auth(config, secrets)
@@ -73,7 +73,7 @@ async test "google(A): default config assembles the official authorization URL" 
   assert_true(url.contains("nonce=nonce-1"))
   assert_true(url.contains("code_challenge_method=S256"))
   @debug.assert_eq(start.state, "st-123")
-  @debug.assert_eq(start.code_verifier, Some("verifier-1"))
+  @debug.assert_eq(start.code_verifier, Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"))
   @debug.assert_eq(start.nonce, Some("nonce-1"))
 }
 
@@ -85,7 +85,7 @@ async test "google(B): complete_auth yields a deterministic identity" {
   let config = google_fixed_config()
   let secrets : @core.SuppliedSecrets = {
     state: Some("st-123"),
-    code_verifier: Some("verifier-1"),
+    code_verifier: Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"),
     nonce: Some("nonce-1"),
   }
   let start = @google.begin_auth(config, secrets)
@@ -174,7 +174,7 @@ async test "google: state mismatch is rejected" {
   let config = google_fixed_config()
   let start = @google.begin_auth(config, {
     state: Some("st-123"),
-    code_verifier: Some("verifier-1"),
+    code_verifier: Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"),
     nonce: Some("nonce-1"),
   })
   let callback = @core.CallbackParams::from_query_string("code=c&state=WRONG")
@@ -193,7 +193,7 @@ async test "google: missing code is rejected as missing_param" {
   let config = google_fixed_config()
   let start = @google.begin_auth(config, {
     state: Some("st-123"),
-    code_verifier: Some("verifier-1"),
+    code_verifier: Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"),
     nonce: Some("nonce-1"),
   })
   let callback = @core.CallbackParams::from_query_string("state=st-123")
@@ -212,7 +212,7 @@ async test "google: nonce mismatch is rejected" {
   let config = google_fixed_config()
   let start = @google.begin_auth(config, {
     state: Some("st-123"),
-    code_verifier: Some("verifier-1"),
+    code_verifier: Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"),
     nonce: Some("WRONG-NONCE"),
   })
   let callback = @core.CallbackParams::from_query_string(
@@ -246,7 +246,7 @@ async test "google: token endpoint error is normalized to provider_error" {
   ).with_http(client).with_clock(clock)
   let start = @google.begin_auth(config, {
     state: Some("st-123"),
-    code_verifier: Some("verifier-1"),
+    code_verifier: Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"),
     nonce: Some("nonce-1"),
   })
   let callback = @core.CallbackParams::from_query_string(
@@ -303,7 +303,7 @@ async test "google: callback error param is normalized to provider_error" {
   let config = google_fixed_config()
   let start = @google.begin_auth(config, {
     state: Some("st-123"),
-    code_verifier: Some("verifier-1"),
+    code_verifier: Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"),
     nonce: Some("nonce-1"),
   })
   let callback = @core.CallbackParams::from_query_string(

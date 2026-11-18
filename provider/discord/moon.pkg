@@ -3,6 +3,7 @@ import {
   "justinwongcn/moonauth/oauth" @oauth,
   "justinwongcn/moonauth/rand" @rand,
   "moonbitlang/core/json" @json,
+  "moonbitlang/core/encoding/utf8" @utf8,
 }
 
 import {

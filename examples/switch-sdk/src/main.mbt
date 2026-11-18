@@ -56,7 +56,7 @@ async fn main {
   // ③ 流程不变：begin → 回调 → complete。
   let start = provider.begin_auth({
     state: Some("st-c1"),
-    code_verifier: Some("verifier-1"),
+    code_verifier: Some("vabcdefghijklmnopqrstuvwxyz0123456789-._~abcdef"),
     nonce: Some("nonce-1"),
   })
   let callback = @core.CallbackParams::from_query_string(

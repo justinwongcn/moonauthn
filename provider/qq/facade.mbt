@@ -124,11 +124,12 @@ async fn qq_fetch_token(config : QQConfig, code : String) -> String raise @core.
 }
 
 ///|
-/// 取 openid（JSONP）。
+/// 取 openid（JSONP）。`me` 响应的 `client_id` 与配置 appid 的绑定校验在
+/// `qq_parse_openid` 内完成。
 async fn qq_fetch_openid(config : QQConfig, access_token : String) -> String raise @core.AuthError {
   let url = config.openid_endpoint + "?access_token=" + qq_percent_encode(access_token)
   let body = qq_get(config, url)
-  qq_parse_openid(body)
+  qq_parse_openid(body, config.appid)
 }
 
 ///|

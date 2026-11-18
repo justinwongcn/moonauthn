@@ -46,7 +46,7 @@ async test "x: begin_auth assembles a PKCE authorization URL" {
   let config = @x.XConfig::new("client-1", "https://app.example/cb")
   let start = @x.begin_auth(config, {
     state: Some("st-1"),
-    code_verifier: Some("verifier-1"),
+    code_verifier: Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"),
     nonce: None,
   })
   let url = start.url
@@ -55,7 +55,7 @@ async test "x: begin_auth assembles a PKCE authorization URL" {
   assert_true(url.contains("response_type=code"))
   assert_true(url.contains("state=st-1"))
   assert_true(url.contains("code_challenge_method=S256"))
-  @debug.assert_eq(start.code_verifier, Some("verifier-1"))
+  @debug.assert_eq(start.code_verifier, Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"))
   @debug.assert_eq(start.nonce, None)
 }
 
@@ -66,7 +66,7 @@ async test "x: begin_auth assembles a PKCE authorization URL" {
 async test "x: complete_auth uses the numeric user id as uid" {
   let start = @x.begin_auth(@x.XConfig::new("client-1", "https://app.example/cb"), {
     state: Some("st-1"),
-    code_verifier: Some("verifier-1"),
+    code_verifier: Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"),
     nonce: None,
   })
   let cb = @core.CallbackParams::from_query_string("code=auth-code-1&state=st-1")
@@ -88,7 +88,7 @@ async test "x: complete_auth uses the numeric user id as uid" {
 async test "x: state mismatch is rejected" {
   let start = @x.begin_auth(@x.XConfig::new("client-1", "https://app.example/cb"), {
     state: Some("st-1"),
-    code_verifier: Some("verifier-1"),
+    code_verifier: Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"),
     nonce: None,
   })
   let cb = @core.CallbackParams::from_query_string("code=c&state=WRONG")
@@ -118,7 +118,7 @@ async test "x: token endpoint error is normalized" {
   ).with_http(client)
   let start = @x.begin_auth(config, {
     state: Some("st-1"),
-    code_verifier: Some("verifier-1"),
+    code_verifier: Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"),
     nonce: None,
   })
   let cb = @core.CallbackParams::from_query_string("code=c&state=st-1")
@@ -149,7 +149,7 @@ async test "x: userinfo without data.id is a parse error" {
   ).with_http(client)
   let start = @x.begin_auth(config, {
     state: Some("st-1"),
-    code_verifier: Some("verifier-1"),
+    code_verifier: Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"),
     nonce: None,
   })
   let cb = @core.CallbackParams::from_query_string("code=c&state=st-1")

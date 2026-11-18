@@ -76,7 +76,7 @@ async test "feishu(A): default config assembles the feishu.cn authorization URL"
   let config = @feishu.FeishuConfig::new("cli-1", "sec-1", "https://app.example/cb")
   let secrets : @core.SuppliedSecrets = {
     state: Some("st-123"),
-    code_verifier: Some("verifier-1"),
+    code_verifier: Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"),
     nonce: None,
   }
   let start = @feishu.begin_auth(config, secrets)
@@ -87,7 +87,7 @@ async test "feishu(A): default config assembles the feishu.cn authorization URL"
   assert_true(url.contains("response_type=code"))
   assert_true(url.contains("state=st-123"))
   assert_true(url.contains("code_challenge_method=S256"))
-  @debug.assert_eq(start.code_verifier, Some("verifier-1"))
+  @debug.assert_eq(start.code_verifier, Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"))
   @debug.assert_eq(start.nonce, None)
 }
 
@@ -97,7 +97,7 @@ async test "feishu(A): with_lark switches to the larksuite.com preset" {
   let config = @feishu.FeishuConfig::new("cli-1", "sec-1", "https://app.example/cb").with_lark()
   let secrets : @core.SuppliedSecrets = {
     state: Some("st-123"),
-    code_verifier: Some("verifier-1"),
+    code_verifier: Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"),
     nonce: None,
   }
   let start = @feishu.begin_auth(config, secrets)
@@ -125,7 +125,7 @@ async test "feishu(B): complete_auth yields a deterministic identity" {
   ).with_http(client).with_clock(clock)
   let start = @feishu.begin_auth(config, {
     state: Some("st-123"),
-    code_verifier: Some("verifier-1"),
+    code_verifier: Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"),
     nonce: None,
   })
   let callback = @core.CallbackParams::from_query_string(
@@ -159,7 +159,7 @@ async test "feishu(B): complete_auth yields a deterministic identity" {
   assert_true(token_body.contains("\"client_secret\":\"sec-1\""))
   assert_true(token_body.contains("\"code\":\"auth-code-1\""))
   assert_true(token_body.contains("\"redirect_uri\":\"https://app.example/cb\""))
-  assert_true(token_body.contains("\"code_verifier\":\"verifier-1\""))
+  assert_true(token_body.contains("\"code_verifier\":\"verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~\""))
   // 请求 1：userinfo —— Bearer 鉴权。
   let me_req = reqs[1]
   @debug.assert_eq(me_req.url, "mock://me")
@@ -175,7 +175,7 @@ async test "feishu: open_id-only identity is Degraded" {
   ])
   let start = @feishu.begin_auth(config, {
     state: Some("st-123"),
-    code_verifier: Some("verifier-1"),
+    code_verifier: Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"),
     nonce: None,
   })
   let callback = @core.CallbackParams::from_query_string(
@@ -197,7 +197,7 @@ async test "feishu: state mismatch is rejected" {
   let config = feishu_fixed_config([feishu_token_ok(), feishu_userinfo_ok()])
   let start = @feishu.begin_auth(config, {
     state: Some("st-123"),
-    code_verifier: Some("verifier-1"),
+    code_verifier: Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"),
     nonce: None,
   })
   let callback = @core.CallbackParams::from_query_string("code=c&state=WRONG")
@@ -216,7 +216,7 @@ async test "feishu: missing code is rejected as missing_param" {
   let config = feishu_fixed_config([feishu_token_ok(), feishu_userinfo_ok()])
   let start = @feishu.begin_auth(config, {
     state: Some("st-123"),
-    code_verifier: Some("verifier-1"),
+    code_verifier: Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"),
     nonce: None,
   })
   let callback = @core.CallbackParams::from_query_string("state=st-123")
@@ -241,7 +241,7 @@ async test "feishu: token endpoint error is normalized to provider_error" {
   ])
   let start = @feishu.begin_auth(config, {
     state: Some("st-123"),
-    code_verifier: Some("verifier-1"),
+    code_verifier: Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"),
     nonce: None,
   })
   let callback = @core.CallbackParams::from_query_string(
@@ -268,7 +268,7 @@ async test "feishu: token endpoint envelope error is normalized to provider_erro
   ])
   let start = @feishu.begin_auth(config, {
     state: Some("st-123"),
-    code_verifier: Some("verifier-1"),
+    code_verifier: Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"),
     nonce: None,
   })
   let callback = @core.CallbackParams::from_query_string(
@@ -292,7 +292,7 @@ async test "feishu: enveloped token response unwraps data and completes" {
   ])
   let start = @feishu.begin_auth(config, {
     state: Some("st-123"),
-    code_verifier: Some("verifier-1"),
+    code_verifier: Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"),
     nonce: None,
   })
   let callback = @core.CallbackParams::from_query_string(
@@ -312,7 +312,7 @@ async test "feishu: flat token response stays compatible" {
   ])
   let start = @feishu.begin_auth(config, {
     state: Some("st-123"),
-    code_verifier: Some("verifier-1"),
+    code_verifier: Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"),
     nonce: None,
   })
   let callback = @core.CallbackParams::from_query_string(
@@ -335,7 +335,7 @@ async test "feishu: userinfo envelope error is normalized to provider_error" {
   ])
   let start = @feishu.begin_auth(config, {
     state: Some("st-123"),
-    code_verifier: Some("verifier-1"),
+    code_verifier: Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"),
     nonce: None,
   })
   let callback = @core.CallbackParams::from_query_string(
@@ -398,7 +398,7 @@ async test "feishu: callback error=access_denied is normalized to provider_error
   let config = feishu_fixed_config([])
   let start = @feishu.begin_auth(config, {
     state: Some("st-1"),
-    code_verifier: Some("verifier-1"),
+    code_verifier: Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"),
     nonce: None,
   })
   let callback = @core.CallbackParams::from_query_string(

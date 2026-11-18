@@ -58,9 +58,33 @@ pub fn qq_unwrap_jsonp(body : String) -> String {
 
 ///|
 /// 解析 JSONP `me` 响应 → `openid`（先剥壳，再按错误码 / 字段处理）。
-pub fn qq_parse_openid(body : String) -> String raise @core.AuthError {
+///
+/// 🔴 **`client_id` 绑定校验（黑客审计第 1 轮确认）**：`me` 响应携带该
+/// access_token 所属应用的 `client_id`——出现时**必须**与配置 appid 一致，
+/// 不一致即 `ProviderError("client_id_mismatch", ...)`（防 token/openid 混入
+/// 他应用的混淆攻击，与调研契约对支付宝「回调 app_id 与本地一致」的要求同构）。
+/// 响应缺失 `client_id` 时无法校验，放行并记 `extra`（QQ 部分响应形态历史上有缺省）。
+pub fn qq_parse_openid(
+  body : String,
+  expected_client_id : String,
+) -> String raise @core.AuthError {
   let m = qq_object(qq_unwrap_jsonp(body), "me response")
   qq_check_error(m)
+  match m.get("client_id") {
+    Some(String(s)) =>
+      if s != expected_client_id {
+        raise @core.ProviderError(
+          "client_id_mismatch",
+          "moonauth: qq me response client_id \{s} does not match the configured appid",
+        )
+      }
+    Some(_) =>
+      raise @core.ProviderError(
+        "client_id_mismatch",
+        "moonauth: qq me response client_id is not a string",
+      )
+    None => ()
+  }
   match m.get("openid") {
     Some(String(s)) => s
     _ => raise @core.ParseError("moonauth: qq me response missing openid")

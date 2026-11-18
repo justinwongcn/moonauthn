@@ -134,12 +134,12 @@ async test "pkce: RFC 7636 appendix B vector" {
 ///|
 /// `S256` 挑战恒为 43 字符（32 字节 SHA-256 的 base64url，无填充）。
 async test "pkce: S256 challenge is 43 chars and depends on the verifier" {
-  let a = @oauth.s256_challenge("verifier-a")
-  let b = @oauth.s256_challenge("verifier-b")
+  let a = @oauth.s256_challenge("verifier-aabcdefghijklmnopqrstuvwxyz0123456789-._~")
+  let b = @oauth.s256_challenge("verifier-babcdefghijklmnopqrstuvwxyz0123456789-._~")
   @debug.assert_eq(a.length(), 43)
   assert_true(a != b)
-  assert_true(@oauth.verify_s256("verifier-a", a))
-  assert_false(@oauth.verify_s256("verifier-b", a))
+  assert_true(@oauth.verify_s256("verifier-aabcdefghijklmnopqrstuvwxyz0123456789-._~", a))
+  assert_false(@oauth.verify_s256("verifier-babcdefghijklmnopqrstuvwxyz0123456789-._~", a))
 }
 
 ///|
@@ -749,4 +749,32 @@ async test "standard oauth: expires_in beyond Int32 range is None, normal values
   @debug.assert_eq(token_big.expires_in, None)
   let token_txt = oauth.exchange(@contract.token_exchange_request())
   @debug.assert_eq(token_txt.expires_in, Some(3600))
+}
+
+///|
+/// 🔴 PKCE 全路径护栏（黑客审计第 1 轮确认修复）：调用方自带的 verifier 必须满足
+/// RFC 7636 §4.1（43~128 字符 + unreserved 字符集），违规即 `InvalidInput`——
+/// 此前自带 verifier 完全不校验，错误延迟到 token 交换才由 provider 端暴露。
+async test "pkce: supplied code_verifier is validated by s256_challenge" {
+  let short = "too-short-verifier"
+  let c1 = try {
+    let _ = @oauth.s256_challenge(short)
+    "no-error"
+  } catch {
+    e => @core.auth_error_code(e)
+  }
+  @debug.assert_eq(c1, "invalid_input")
+  let badcharset = "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk/plus$sign"
+  let c2 = try {
+    let _ = @oauth.s256_challenge(badcharset)
+    "no-error"
+  } catch {
+    e => @core.auth_error_code(e)
+  }
+  @debug.assert_eq(c2, "invalid_input")
+  // 合规 verifier 正常产出挑战
+  assert_true(
+    @oauth.s256_challenge("dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk") ==
+    "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM",
+  )
 }

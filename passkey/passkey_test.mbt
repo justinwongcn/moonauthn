@@ -704,3 +704,43 @@ async test "webauthn contract: run_webauthn_with accepts caller-provided vectors
   }, webauthn_fixtures())
   @contract.assert_all_pass(cases)
 }
+
+///|
+/// 🔴 WebAuthn Level 3：credentialId **不得超过 1023 字节**（黑客审计第 1 轮确认
+/// 修复）——超长凭据的注册输入必须被 `InvalidInput` 拒绝，不得透传给调用方存储。
+async test "passkey: credential id over 1023 bytes is rejected" {
+  let oversized = Bytes::makei(2000, fn(i) { (i % 256).to_byte() })
+  let rp_id = "example.com"
+  let auth_data = auth_data_attested(
+    @webauthn.rp_id_hash(rp_id),
+    0x45,
+    0,
+    fixed_aaguid(),
+    oversized,
+    credential_cose(),
+  )
+  let empty : Array[(@cbor.CborValue, @cbor.CborValue)] = []
+  let attestation_object = @cbor.encode(
+    @cbor.CborValue::Map([
+      (@cbor.CborValue::Text("fmt"), @cbor.CborValue::Text("none")),
+      (@cbor.CborValue::Text("authData"), @cbor.CborValue::Bytes(auth_data)),
+      (@cbor.CborValue::Text("attStmt"), @cbor.CborValue::Map(empty)),
+    ]),
+  )
+  let challenge = "challenge-oversized-credential-id"
+  let input : @core.RegistrationInput = {
+    client_data_json: client_data("webauthn.create", challenge, "https://example.com"),
+    attestation_object,
+    expected_challenge: challenge,
+    expected_origin: "https://example.com",
+    rp_id,
+  }
+  let service = @passkey.PasskeyService::new(passkey_config())
+  let code = try {
+    let _ = service.finish_registration(input)
+    "no-error"
+  } catch {
+    e => @core.auth_error_code(e)
+  }
+  @debug.assert_eq(code, "invalid_input")
+}

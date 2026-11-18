@@ -56,20 +56,26 @@ async fn google_login(
 
 ///|
 /// `/callback` 段：按回调 `state` **一次性**取回暂存的 `AuthStart`，交库完成校验。
+///
+/// 🔴 **直传原始 query 字符串**（黑客审计第 2 轮确认修正）：handler 应把浏览器回传的
+/// **原始** query（`req.query_string()`）整体交给 `from_query_string`——**不要**把解码后的
+/// `code` / `state` 重新拼接（平台下发 `code=a%26b` 时解码值为 `a&b`，重拼会被二次解析
+/// 碎裂，state 校验失败且难排查）。本示例的入参即「原始 query」形态。
 async fn google_complete_from(
   session : Map[String, @core.AuthStart],
-  code : String,
-  state : String,
+  raw_query : String,
 ) -> @core.ExternalIdentity raise @core.AuthError {
+  let callback = @core.CallbackParams::from_query_string(raw_query)
+  let state = match callback.get("state") {
+    Some(s) => s
+    None => raise @core.MissingParam("state")
+  }
   let start = match session.get(state) {
     Some(s) => s
     None => raise @core.StateMismatch
   }
   session.remove(state)
   let config = @contract.google_mock_config()
-  let callback = @core.CallbackParams::from_query_string(
-    "code=" + code + "&state=" + state,
-  )
   @google.complete_auth(config, callback, start)
 }
 
@@ -111,7 +117,10 @@ async fn main {
   let gstart = google_login(session)
   println("[google] authorize url       = " + gstart.url)
   println("[google] server-minted state = " + gstart.state)
-  let gidentity = google_complete_from(session, "auth-code-1", gstart.state)
+  // 🔴 演示里手工构造「原始 query」；真实 handler 应原样传 `req.query_string()`。
+  //    （state 为服务端铸造的 hex，不含需编码的字符，此处拼接安全。）
+  let gquery = "code=auth-code-1&state=" + gstart.state
+  let gidentity = google_complete_from(session, gquery)
   println("[google] provider/uid        = " + gidentity.provider + " / " + gidentity.uid)
   println("[google] email               = " + gidentity.email.unwrap_or("<none>"))
   println(
@@ -122,7 +131,7 @@ async fn main {
   )
   // 🔴 一次性语义：同一 state 的「回调重放」会被拒绝（会话已消费）。
   let replay = try {
-    let _ = google_complete_from(session, "auth-code-1", gstart.state)
+    let _ = google_complete_from(session, gquery)
     "no-error"
   } catch {
     e => @core.auth_error_code(e)

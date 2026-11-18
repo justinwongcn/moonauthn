@@ -68,7 +68,7 @@ pub fn token_exchange_request() -> @core.TokenExchangeRequest {
     client_secret: Some("secret-1"),
     code: "auth-code-1",
     redirect_uri: "https://app.example/cb",
-    code_verifier: Some("verifier-1"),
+    code_verifier: Some("vabcdefghijklmnopqrstuvwxyz0123456789-._~abcdef"),
     extra: Map([]),
   }
 }

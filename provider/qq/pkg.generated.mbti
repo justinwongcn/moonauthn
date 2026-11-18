@@ -12,7 +12,7 @@ pub async fn complete_auth(QQConfig, @core.CallbackParams, @core.AuthStart) -> @
 
 pub fn qq_identity(String, String) -> @core.ExternalIdentity raise @core.AuthError
 
-pub fn qq_parse_openid(String) -> String raise @core.AuthError
+pub fn qq_parse_openid(String, String) -> String raise @core.AuthError
 
 pub fn qq_parse_token(String) -> String raise @core.AuthError
 

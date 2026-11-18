@@ -119,9 +119,9 @@ pub(all) struct AssertionInput {
 }
 
 pub(all) struct AsyncHttpClient {
-  timeout_ms : Int32?
+  unit : Unit
 }
-pub fn AsyncHttpClient::new(timeout_ms? : Int32) -> Self
+pub fn AsyncHttpClient::new() -> Self
 pub async fn AsyncHttpClient::send(Self, HttpRequest) -> HttpResponse raise AuthError
 pub impl HttpClient for AsyncHttpClient
 

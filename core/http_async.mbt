@@ -14,19 +14,29 @@
 //! 将永远不可达。seam 契约同样如此约定（见 `seams_io.mbt`），自定义实现请保持一致。
 //!
 //! 所有第三方（`@http` / `@io`）异常在边界处立即 `catch` 并转换为 `AuthError`。
+//!
+//! 🔴 **已知限制（黑客审计第 1 轮确认）**：本实现**不支持超时**——上游
+//! `@http.request` 没有任何超时参数，且 `moonbitlang/async` 没有公开的
+//! spawn/select/cancel 原语可供竞速实现（`internal/coroutine` 跨模块不可引用）。
+//! 平台端点 TCP 黑洞时请求会无限挂起。**超时职责归调用方的 `HttpClient` 实现**：
+//! 对可用性有要求的装配请注入自带超时的实现（seam 可整体替换，SDK-01）。
+//!
+//! 🔴 **已知限制 2**：上游 `@http.request` **全量缓冲**响应体，本层无法限制
+//! 响应大小——恶意/故障网关返回超大响应时的内存占用不可在本层设防（同理归
+//! 调用方自定义实现或上游解决）。
 
 ///|
 /// 默认 `HttpClient` 实现。
 ///
-/// 目前仅保留一个可选的超时字段（留作后续扩展）；它的存在不改变 seam 契约。
+/// `unit` 为占位字段（保持结构体非空；结构本身无状态）。
 pub(all) struct AsyncHttpClient {
-  timeout_ms : Int?
+  unit : Unit
 }
 
 ///|
 /// 构造 `AsyncHttpClient`。
-pub fn AsyncHttpClient::new(timeout_ms? : Int) -> AsyncHttpClient {
-  { timeout_ms: timeout_ms }
+pub fn AsyncHttpClient::new() -> AsyncHttpClient {
+  { unit: () }
 }
 
 ///|

@@ -73,13 +73,49 @@ pub fn discord_identity(user_json : String) -> @core.ExternalIdentity raise @cor
 
 ///|
 /// 按 Discord 规则拼头像 URL：`a_` 前缀（动图哈希）→ `.gif`，否则 `.png`。
+///
+/// 🔴 `uid` / `hash` 一律百分号编码（黑客审计第 2 轮确认）：两者来自平台响应，
+/// 正常形态为数字雪花 ID 与 hex/`a_` 前缀哈希，但异常形态（含 `/` `?` `#`）会
+/// 篡改 URL——与库内「动态值一律 percent_encode」教义对齐。
 fn discord_avatar_url(uid : String, hash : String) -> String {
   let ext = if hash.has_prefix("a_") {
     "gif"
   } else {
     "png"
   }
-  "https://cdn.discordapp.com/avatars/\{uid}/\{hash}.\{ext}"
+  "https://cdn.discordapp.com/avatars/\{discord_percent_encode(uid)}/\{discord_percent_encode(hash)}.\{ext}"
+}
+
+///|
+/// `application/x-www-form-urlencoded` 百分号编码（空格 → `%20`；RFC 3986 非保留集
+/// 之外全编码）——与 dingtalk/qq/wechat 的同名私有助手同构。
+fn discord_percent_encode(s : String) -> String {
+  let bytes = @utf8.encode(s)
+  let out : Array[Byte] = []
+  let hex = @utf8.encode("0123456789ABCDEF")
+  for b in bytes {
+    let c = b.to_int()
+    if discord_is_unreserved(c) {
+      out.push(b)
+    } else {
+      out.push(b'%')
+      out.push(hex[(c >> 4) & 0x0F])
+      out.push(hex[c & 0x0F])
+    }
+  }
+  @utf8.decode_lossy(Bytes::from_array(out))
+}
+
+///|
+/// 是否为 RFC 3986 非保留字符。
+fn discord_is_unreserved(c : Int) -> Bool {
+  (c >= 65 && c <= 90) ||
+  (c >= 97 && c <= 122) ||
+  (c >= 48 && c <= 57) ||
+  c == 45 ||
+  c == 95 ||
+  c == 46 ||
+  c == 126
 }
 
 ///|

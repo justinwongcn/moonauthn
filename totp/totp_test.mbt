@@ -152,6 +152,9 @@ async test "totp: verify honours the drift window" {
   assert_false(primitive.verify(seed, "94287082", 119L, 1))
   // window=0 时仅当前步有效。
   assert_false(primitive.verify(seed, "94287082", 89L, 0))
+  // 🔴 仅回看（黑客审计第 2 轮确认修复）：未来步（t=29 时校验 step1 的码）必须拒绝。
+  assert_false(primitive.verify(seed, "94287082", 29L, 1))
+  assert_false(primitive.verify(seed, "94287082", 29L, 0))
 }
 
 // ════════ 确定性随机 ════════

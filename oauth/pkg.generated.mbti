@@ -16,9 +16,11 @@ pub fn base64url_encode(Bytes) -> String
 
 pub fn generate_code_verifier(&@core.RandomSource, byte_len? : Int32) -> String raise @core.AuthError
 
-pub fn s256_challenge(String) -> String
+pub fn s256_challenge(String) -> String raise @core.AuthError
 
-pub fn verify_s256(String, String) -> Bool
+pub fn validate_code_verifier(String) -> Unit raise @core.AuthError
+
+pub fn verify_s256(String, String) -> Bool raise @core.AuthError
 
 // Errors
 

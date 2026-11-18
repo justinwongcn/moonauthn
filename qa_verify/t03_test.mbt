@@ -324,7 +324,7 @@ async test "t03 §2.3 qq jsonp: no-wrapper and missing-semicolon still parse" {
 async test "t03 §2.3 qq jsonp: ')' inside body -> explicit parse_error (no silent swallow)" {
   let body = "callback( {\"a\":\"b)c\"} );"
   let code = try {
-    let _ = @qq.qq_parse_openid(body)
+    let _ = @qq.qq_parse_openid(body, "appid-t03")
     "no-error"
   } catch {
     e => @core.auth_error_code(e)
@@ -336,7 +336,7 @@ async test "t03 §2.3 qq jsonp: ')' inside body -> explicit parse_error (no sile
 /// 空 body / 空白壳 → 明确报错，不得静默返回空串。
 async test "t03 §2.3 qq parse_openid: empty body -> parse_error" {
   let code = try {
-    let _ = @qq.qq_parse_openid("")
+    let _ = @qq.qq_parse_openid("", "appid-t03")
     "no-error"
   } catch {
     e => @core.auth_error_code(e)
@@ -349,12 +349,45 @@ async test "t03 §2.3 qq parse_openid: empty body -> parse_error" {
 async test "t03 §2.3 qq jsonp: error branch -> provider_error" {
   let body = "callback( {\"error\":100016,\"error_description\":\"access token check failed\"} );"
   let code = try {
-    let _ = @qq.qq_parse_openid(body)
+    let _ = @qq.qq_parse_openid(body, "appid-t03")
     "no-error"
   } catch {
     e => @core.auth_error_code(e)
   }
   @debug.assert_eq(code, "provider_error")
+}
+
+///|
+/// 🔴 `client_id` 绑定校验（黑客审计第 1 轮确认修复）：`me` 响应的 `client_id`
+/// 与期望 appid 不一致 → `provider_error`（code = `client_id_mismatch`）。
+async test "t03 §2.3 qq jsonp: client_id mismatch -> provider_error" {
+  let body = "callback( {\"client_id\":\"OTHER-APP\",\"openid\":\"o-1\"} );"
+  let outcome = try {
+    let _ = @qq.qq_parse_openid(body, "appid-t03")
+    "no-error"
+  } catch {
+    e => @core.auth_error_code(e) + "|" + @core.auth_error_message(e)
+  }
+  assert_true(outcome.has_prefix("provider_error|"))
+  assert_true(outcome.contains("client_id_mismatch"))
+  assert_true(outcome.contains("OTHER-APP"))
+}
+
+///|
+/// `client_id` 与期望一致 → 正常返回 `openid`；**缺失** `client_id` 时无法校验、
+/// 放行（QQ 部分响应形态历史上有缺省，文档已记）。
+async test "t03 §2.3 qq jsonp: client_id match passes, absent passes" {
+  @debug.assert_eq(
+    @qq.qq_parse_openid(
+      "callback( {\"client_id\":\"appid-t03\",\"openid\":\"o-match\"} );",
+      "appid-t03",
+    ),
+    "o-match",
+  )
+  @debug.assert_eq(
+    @qq.qq_parse_openid("callback( {\"openid\":\"o-nocid\"} );", "appid-t03"),
+    "o-nocid",
+  )
 }
 
 ///|
@@ -554,7 +587,7 @@ async test "t03 §2.5 google: fixed vectors yield uid=sub and verified email" {
   let config = t3_google_config()
   let start = @google.begin_auth(config, {
     state: Some("st-1"),
-    code_verifier: Some("verifier-1"),
+    code_verifier: Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"),
     nonce: Some("nonce-1"),
   })
   let cb = @core.CallbackParams::from_query_string("code=ac&state=st-1")
@@ -573,7 +606,7 @@ async test "t03 §2.5 google error vectors map to the right AuthError" {
   let c1 = t3_google_config()
   let s1 = @google.begin_auth(c1, {
     state: Some("st"),
-    code_verifier: Some("v"),
+    code_verifier: Some("vabcdefghijklmnopqrstuvwxyz0123456789-._~abcdef"),
     nonce: Some("n"),
   })
   let e1 = try {
@@ -588,7 +621,7 @@ async test "t03 §2.5 google error vectors map to the right AuthError" {
   let e2 = try {
     let s2 = @google.begin_auth(c2, {
       state: Some("st"),
-      code_verifier: Some("v"),
+      code_verifier: Some("vabcdefghijklmnopqrstuvwxyz0123456789-._~abcdef"),
       nonce: Some("n"),
     })
     let _ = @google.complete_auth(c2, @core.CallbackParams::from_query_string("state=st"), s2)
@@ -601,7 +634,7 @@ async test "t03 §2.5 google error vectors map to the right AuthError" {
   let c3 = t3_google_config()
   let s3 = @google.begin_auth(c3, {
     state: Some("st"),
-    code_verifier: Some("v"),
+    code_verifier: Some("vabcdefghijklmnopqrstuvwxyz0123456789-._~abcdef"),
     nonce: Some("WRONG"),
   })
   let e3 = try {
@@ -627,7 +660,7 @@ async test "t03 §2.5 google error vectors map to the right AuthError" {
   ).with_http(client)
   let s4 = @google.begin_auth(c4, {
     state: Some("st"),
-    code_verifier: Some("v"),
+    code_verifier: Some("vabcdefghijklmnopqrstuvwxyz0123456789-._~abcdef"),
     nonce: Some("n"),
   })
   let e4 = try {
@@ -666,14 +699,14 @@ async test "t03 §2.5 x: PKCE S256 challenge matches the verifier" {
   let config = @x.XConfig::new("client-x", "https://app.example/cb")
   let start = @x.begin_auth(config, {
     state: Some("st-x"),
-    code_verifier: Some("verifier-x"),
+    code_verifier: Some("verifier-xabcdefghijklmnopqrstuvwxyz0123456789-._~"),
     nonce: None,
   })
-  let expected = @oauth.s256_challenge("verifier-x")
+  let expected = @oauth.s256_challenge("verifier-xabcdefghijklmnopqrstuvwxyz0123456789-._~")
   assert_true(start.url.contains("code_challenge_method=S256"))
   assert_true(start.url.contains("code_challenge=" + expected))
   assert_true(start.url.contains("state=st-x"))
-  @debug.assert_eq(start.code_verifier, Some("verifier-x"))
+  @debug.assert_eq(start.code_verifier, Some("verifier-xabcdefghijklmnopqrstuvwxyz0123456789-._~"))
 }
 
 ///|
@@ -703,7 +736,7 @@ async test "t03 §2.5 x_identity: uid is data.id, not username" {
 async test "t03 §2.6 six providers assemble their own authorization URLs" {
   let secrets : @core.SuppliedSecrets = {
     state: Some("st"),
-    code_verifier: Some("v"),
+    code_verifier: Some("vabcdefghijklmnopqrstuvwxyz0123456789-._~abcdef"),
     nonce: Some("n"),
   }
   let g = @google.begin_auth(@google.GoogleConfig::new("c", "https://app.example/cb"), secrets)
@@ -798,7 +831,7 @@ async test "t03 §2.7 google/apple/x state come from the injected RandomSource" 
   )
   let gs = @google.begin_auth(g, {
     state: None,
-    code_verifier: Some("v"),
+    code_verifier: Some("vabcdefghijklmnopqrstuvwxyz0123456789-._~abcdef"),
     nonce: Some("n"),
   })
   @debug.assert_eq(gs.state, t3_known_b64url)
@@ -806,7 +839,7 @@ async test "t03 §2.7 google/apple/x state come from the injected RandomSource" 
   let xc = @x.XConfig::new("c", "https://app.example/cb").with_random(
     T3Random::{ data: t3_known() },
   )
-  let xs = @x.begin_auth(xc, { state: None, code_verifier: Some("v"), nonce: None })
+  let xs = @x.begin_auth(xc, { state: None, code_verifier: Some("vabcdefghijklmnopqrstuvwxyz0123456789-._~abcdef"), nonce: None })
   @debug.assert_eq(xs.state, t3_known_b64url)
   let ac = @apple.AppleConfig::new(
     "c",
@@ -817,7 +850,7 @@ async test "t03 §2.7 google/apple/x state come from the injected RandomSource" 
   ).with_random(T3Random::{ data: t3_known() })
   let as_ = @apple.begin_auth(ac, {
     state: None,
-    code_verifier: Some("v"),
+    code_verifier: Some("vabcdefghijklmnopqrstuvwxyz0123456789-._~abcdef"),
     nonce: Some("n"),
   })
   @debug.assert_eq(as_.state, t3_known_b64url)
