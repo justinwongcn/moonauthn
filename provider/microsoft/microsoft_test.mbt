@@ -318,14 +318,16 @@ async test "microsoft: state mismatch is rejected" {
 /// 🔴 回归（黑客审计 F13，JEV 0.992）：多受众 token（aud 含我们的 client_id）但
 /// `azp` 指向他方应用——OIDC Core §3.1.3.7 要求校验 azp，必须拒绝，防止「为其他
 /// 受众签发」的 token 被复用。
-async test "microsoft: multi-audience token with foreign azp is rejected" {
-  let claims = "{\"iss\":\"https://login.microsoftonline.com/" +
-  msft_tid +
-  "/v2.0\",\"aud\":[\"client-1\",\"attacker-client\"],\"azp\":\"attacker-client\",\"sub\":\"user-msft\",\"tid\":\"" +
-  msft_tid +
-  "\",\"nonce\":\"nonce-1\",\"iat\":1699999000,\"exp\":1700003600}"
+
+///|
+/// azp 用例共享装配（F-d 第 1 点）：mock = [token(claims), JWKS] + FixedClock +
+/// 端点指向 mock；`secrets` / `callback` 复用既有固定 verifier 字面量。
+/// 返回三元组（config, secrets, callback），调用方直接 `complete_auth`。
+async fn msft_azp_fixture(
+  claims_json : String,
+) -> (@microsoft.MicrosoftConfig, @core.AuthStart, @core.CallbackParams) raise @core.AuthError {
   let client : &@core.HttpClient = @contract.MockHttpClient::new([
-    msft_token_ok(claims),
+    msft_token_ok(claims_json),
     msft_jwks_response(),
   ])
   let clock : &@core.Clock = @contract.FixedClock::new(@contract.fixed_now_unix())
@@ -335,20 +337,38 @@ async test "microsoft: multi-audience token with foreign azp is rejected" {
   .with_http(client).with_clock(clock)
   let secrets : @core.SuppliedSecrets = {
     state: Some("st-123"),
-    code_verifier: Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"),
+    code_verifier: Some(msft_fixed_verifier),
     nonce: Some("nonce-1"),
   }
   let start = @microsoft.begin_auth(config, secrets)
   let callback = @core.CallbackParams::from_query_string(
-    "code=auth-code-1&state=st-123",
+    "code=auth-code-1&state=" + start.state,
   )
-  let code = try {
+  (config, start, callback)
+}
+
+///|
+/// azp 用例的固定 verifier 字面量（RFC 7636 合规，与全文件既有用例一致）。
+let msft_fixed_verifier : String = "verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"
+
+///|
+/// 多受众 token 但 `azp` 指向他方应用 → `audience_mismatch`，且消息含 azp 值
+/// （actual=attacker-client，钉死拒绝来自 check_azp 而非 mooncred 受众阶段）。
+async test "microsoft: multi-audience token with foreign azp is rejected" {
+  let claims = "{\"iss\":\"https://login.microsoftonline.com/" +
+  msft_tid +
+  "/v2.0\",\"aud\":[\"client-1\",\"attacker-client\"],\"azp\":\"attacker-client\",\"sub\":\"user-msft\",\"tid\":\"" +
+  msft_tid +
+  "\",\"nonce\":\"nonce-1\",\"iat\":1699999000,\"exp\":1700003600}"
+  let (config, start, callback) = msft_azp_fixture(claims)
+  let outcome = try {
     let _ = @microsoft.complete_auth(config, callback, start)
     "no-error"
   } catch {
-    e => @core.auth_error_code(e)
+    e => @core.auth_error_code(e) + "|" + @core.auth_error_message(e)
   }
-  @debug.assert_eq(code, "audience_mismatch")
+  assert_true(outcome.has_prefix("audience_mismatch|"))
+  assert_true(outcome.contains("actual=attacker-client"))
 }
 
 ///|
@@ -360,25 +380,102 @@ async test "microsoft: multi-audience token with correct azp passes" {
   "/v2.0\",\"aud\":[\"client-1\",\"other-resource\"],\"azp\":\"client-1\",\"sub\":\"user-msft\",\"tid\":\"" +
   msft_tid +
   "\",\"nonce\":\"nonce-1\",\"iat\":1699999000,\"exp\":1700003600}"
-  let client : &@core.HttpClient = @contract.MockHttpClient::new([
-    msft_token_ok(claims),
-    msft_jwks_response(),
-  ])
-  let config = @microsoft.MicrosoftConfig::new("client-1", "https://app.example/cb")
-  .with_client_secret("secret-1")
-  .with_endpoints("mock://authorize", "mock://token", "mock://jwks")
-  .with_http(client)
-  let clock : &@core.Clock = @contract.FixedClock::new(@contract.fixed_now_unix())
-  let config = config.with_clock(clock)
-  let secrets : @core.SuppliedSecrets = {
-    state: Some("st-123"),
-    code_verifier: Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"),
-    nonce: Some("nonce-1"),
-  }
-  let start = @microsoft.begin_auth(config, secrets)
-  let callback = @core.CallbackParams::from_query_string(
-    "code=auth-code-1&state=st-123",
-  )
+  let (config, start, callback) = msft_azp_fixture(claims)
   let identity = @microsoft.complete_auth(config, callback, start)
   @debug.assert_eq(identity.uid, "user-msft")
+}
+
+///|
+/// 🔴 F-c 回归：多受众 token **缺 `azp`**（OIDC §3.1.3.7 step 3）→ `audience_mismatch`
+/// 且消息含 `<missing azp>`（钉死 None 分支——若被改成放行，本测试即红）。
+async test "microsoft: multi-audience token missing azp is rejected" {
+  let claims = "{\"iss\":\"https://login.microsoftonline.com/" +
+  msft_tid +
+  "/v2.0\",\"aud\":[\"client-1\",\"other-resource\"],\"sub\":\"user-msft\",\"tid\":\"" +
+  msft_tid +
+  "\",\"nonce\":\"nonce-1\",\"iat\":1699999000,\"exp\":1700003600}"
+  let (config, start, callback) = msft_azp_fixture(claims)
+  let outcome = try {
+    let _ = @microsoft.complete_auth(config, callback, start)
+    "no-error"
+  } catch {
+    e => @core.auth_error_code(e) + "|" + @core.auth_error_message(e)
+  }
+  assert_true(outcome.has_prefix("audience_mismatch|"))
+  assert_true(outcome.contains("<missing azp>"))
+}
+
+///|
+/// 🔴 F-e 回归：**单值 aud** + `azp` 指向他方应用 → 拒绝（条款 b：azp 存在则必须
+/// 等于期望受众，与 aud 单/多值无关）。
+async test "microsoft: single-audience token with foreign azp is rejected" {
+  let claims = "{\"iss\":\"https://login.microsoftonline.com/" +
+  msft_tid +
+  "/v2.0\",\"aud\":\"client-1\",\"azp\":\"attacker-client\",\"sub\":\"user-msft\",\"tid\":\"" +
+  msft_tid +
+  "\",\"nonce\":\"nonce-1\",\"iat\":1699999000,\"exp\":1700003600}"
+  let (config, start, callback) = msft_azp_fixture(claims)
+  let outcome = try {
+    let _ = @microsoft.complete_auth(config, callback, start)
+    "no-error"
+  } catch {
+    e => @core.auth_error_code(e) + "|" + @core.auth_error_message(e)
+  }
+  assert_true(outcome.has_prefix("audience_mismatch|"))
+  assert_true(outcome.contains("actual=attacker-client"))
+}
+
+///|
+/// 🔴 raw `aud` 门控（OCR 确认的绕过路径）：数组含**非字符串元素**（如数字）→
+/// `ParseError`（fail-closed），不得静默丢弃元素后绕过 azp 门控。
+async test "microsoft: aud array with non-string element is parse_error" {
+  let claims = "{\"iss\":\"https://login.microsoftonline.com/" +
+  msft_tid +
+  "/v2.0\",\"aud\":[\"client-1\",42],\"azp\":\"client-1\",\"sub\":\"user-msft\",\"tid\":\"" +
+  msft_tid +
+  "\",\"nonce\":\"nonce-1\",\"iat\":1699999000,\"exp\":1700003600}"
+  let (config, start, callback) = msft_azp_fixture(claims)
+  let code = try {
+    let _ = @microsoft.complete_auth(config, callback, start)
+    "no-error"
+  } catch {
+    e => @core.auth_error_code(e)
+  }
+  @debug.assert_eq(code, "parse_error")
+}
+
+///|
+/// 🔴 F-a 攻击回归（OCR 批次）：`azp`（client-2）**不在 token 自身的 aud 声明**里
+/// （aud=[client-1, client-3]），即便它属于配置的期望受众集合也必须拒绝——
+/// 「为其他受众签发」的 token 不得被复用。经 `IdTokenVerifier` seam 直接验证
+/// （`audiences` 是公开多值字段，多客户端装配场景真实可达）。
+async test "microsoft: azp outside the token aud claim is rejected even if configured" {
+  let claims = "{\"iss\":\"https://login.microsoftonline.com/" +
+  msft_tid +
+  "/v2.0\",\"aud\":[\"client-1\",\"client-3\"],\"azp\":\"client-2\",\"sub\":\"user-msft\",\"tid\":\"" +
+  msft_tid +
+  "\",\"nonce\":\"nonce-1\",\"iat\":1699999000,\"exp\":1700003600}"
+  let client : &@core.HttpClient = @contract.MockHttpClient::new([
+    msft_jwks_response(),
+  ])
+  let clock : &@core.Clock = @contract.FixedClock::new(@contract.fixed_now_unix())
+  let verifier = @oidc.JwksIdTokenVerifier::new_with_http(client).with_clock(clock)
+  let outcome = try {
+    let claims_v = verifier.verify(
+      msft_mint_token(claims),
+      {
+        issuers: ["https://login.microsoftonline.com/" + msft_tid + "/v2.0"],
+        audiences: ["client-1", "client-2"],
+        nonce: Some("nonce-1"),
+        jwks_uri: Some("mock://jwks"),
+        leeway_seconds: Some(60),
+        algorithms: ["RS256"],
+      },
+    )
+    "ATTACK-SUCCEEDED uid=" + claims_v.subject
+  } catch {
+    e => "REJECTED: " + @core.auth_error_code(e) + "|" + @core.auth_error_message(e)
+  }
+  assert_true(outcome.has_prefix("REJECTED: audience_mismatch"))
+  assert_true(outcome.contains("actual=client-2"))
 }
