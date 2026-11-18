@@ -23,7 +23,7 @@ test "parse_urlencoded splits pairs and tolerates missing values" {
 ///|
 test "provider table is complete and consistent" {
   let ids = provider_ids()
-  @debug.assert_eq(ids.length(), 10)
+  @debug.assert_eq(ids.length(), 11)
   @debug.assert_eq(ids[0], "google")
   @debug.assert_eq(ids[1], "apple")
   @debug.assert_eq(ids[2], "wechat")
@@ -34,6 +34,7 @@ test "provider table is complete and consistent" {
   @debug.assert_eq(ids[7], "discord")
   @debug.assert_eq(ids[8], "dingtalk")
   @debug.assert_eq(ids[9], "feishu")
+  @debug.assert_eq(ids[10], "microsoft")
   for d in all_providers() {
     assert_true(d.doc_url.length() > 0)
     assert_true(d.display_name.length() > 0)

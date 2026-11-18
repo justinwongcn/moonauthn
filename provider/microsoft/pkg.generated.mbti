@@ -1,0 +1,63 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "justinwongcn/moonauth/provider/microsoft"
+
+import {
+  "justinwongcn/moonauth/core",
+}
+
+// Values
+pub async fn begin_auth(MicrosoftConfig, @core.SuppliedSecrets) -> @core.AuthStart raise @core.AuthError
+
+pub async fn complete_auth(MicrosoftConfig, @core.CallbackParams, @core.AuthStart) -> @core.ExternalIdentity raise @core.AuthError
+
+pub fn microsoft_identity(@core.IdTokenClaims) -> @core.ExternalIdentity
+
+// Errors
+
+// Types and methods
+pub struct DefaultMicrosoftProvider {
+  config : MicrosoftConfig
+  oauth : &@core.OAuthAuthCode
+  id_token : &@core.IdTokenVerifier
+}
+pub async fn DefaultMicrosoftProvider::begin_auth(Self, @core.SuppliedSecrets) -> @core.AuthStart raise @core.AuthError
+pub async fn DefaultMicrosoftProvider::complete_auth(Self, @core.CallbackParams, @core.AuthStart) -> @core.ExternalIdentity raise @core.AuthError
+pub fn DefaultMicrosoftProvider::config(Self) -> MicrosoftConfig
+pub fn DefaultMicrosoftProvider::new(MicrosoftConfig) -> Self
+pub fn DefaultMicrosoftProvider::with_id_token(Self, &@core.IdTokenVerifier) -> Self
+pub fn DefaultMicrosoftProvider::with_oauth(Self, &@core.OAuthAuthCode) -> Self
+pub impl MicrosoftProvider for DefaultMicrosoftProvider
+
+pub struct MicrosoftConfig {
+  client_id : String
+  client_secret : String?
+  redirect_uri : String
+  scopes : Array[String]
+  tenant : String
+  allowed_tenant_ids : Array[String]
+  issuer_template : String
+  authorization_endpoint : String
+  token_endpoint : String
+  jwks_uri : String
+  http : &@core.HttpClient
+  clock : &@core.Clock
+  random : &@core.RandomSource
+}
+pub fn MicrosoftConfig::new(String, String) -> Self
+pub fn MicrosoftConfig::with_allowed_tenant_ids(Self, Array[String]) -> Self
+pub fn MicrosoftConfig::with_client_secret(Self, String) -> Self
+pub fn MicrosoftConfig::with_clock(Self, &@core.Clock) -> Self
+pub fn MicrosoftConfig::with_endpoints(Self, String, String, String) -> Self
+pub fn MicrosoftConfig::with_http(Self, &@core.HttpClient) -> Self
+pub fn MicrosoftConfig::with_issuer_template(Self, String) -> Self
+pub fn MicrosoftConfig::with_random(Self, &@core.RandomSource) -> Self
+pub fn MicrosoftConfig::with_scopes(Self, Array[String]) -> Self
+pub fn MicrosoftConfig::with_tenant(Self, String) -> Self
+
+// Type aliases
+
+// Traits
+pub(open) trait MicrosoftProvider {
+  async fn begin_auth(Self, @core.SuppliedSecrets) -> @core.AuthStart raise @core.AuthError
+  async fn complete_auth(Self, @core.CallbackParams, @core.AuthStart) -> @core.ExternalIdentity raise @core.AuthError
+}

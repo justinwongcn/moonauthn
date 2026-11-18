@@ -2,7 +2,7 @@
 
 **框架无关、不持有任何状态的第三方登录 / Passkey / 2FA 开源工具库**（MoonBit）。
 
-`moonauth` 只封装十个平台的第三方登录、WebAuthn（passkey）与 TOTP（2FA）的**协议与密码学细节**；
+`moonauth` 只封装十一个平台（含 Microsoft Entra ID）的第三方登录、WebAuthn（passkey）与 TOTP（2FA）的**协议与密码学细节**；
 账号注册逻辑与所有状态由**你自己**实现。
 
 > 🔴 **三句定位声明（务必先读）**
@@ -131,7 +131,7 @@ println(identity.uid)          // = Google 的 sub
 | `passkey` | WebAuthn 验签（`StandardWebAuthnVerifier`）+ `PasskeyService`（challenge 一次性 + TTL） |
 | `totp` | TOTP / 恢复码（`StandardTotpPrimitive` + `TotpService`） |
 | `store-memory` | `ChallengeStore` 内存实现（`MemoryChallengeStore`） |
-| `provider/google` `provider/apple` `provider/x` `provider/wechat` `provider/qq` `provider/alipay` `provider/github` `provider/discord` `provider/dingtalk` `provider/feishu` | 十个平台的 facade（`begin_auth` / `complete_auth` + 归一化），每个**相互隔离**；飞书内置 **Lark 国际版**端点预设（`with_lark()`，已按官方文档核实）；钉钉国际站端点**未能核实故不内置**（用 `with_endpoints` 配置，见其平台文档）；微信另含**小程序登录** `wechat_code2_session`（官方文档核实），支付宝身份键 `open_id` 优先（官方口径） |
+| `provider/google` `provider/apple` `provider/x` `provider/wechat` `provider/qq` `provider/alipay` `provider/github` `provider/discord` `provider/dingtalk` `provider/feishu` `provider/microsoft` | 十一个平台的 facade（`begin_auth` / `complete_auth` + 归一化），每个**相互隔离**；飞书内置 **Lark 国际版**端点预设（`with_lark()`，已按官方文档核实）；钉钉国际站端点**未能核实故不内置**（用 `with_endpoints` 配置，见其平台文档）；微信另含**小程序登录** `wechat_code2_session`（官方文档核实），支付宝身份键 `open_id` 优先（官方口径） |
 | `contract` | 参数化契约测试骨架（SDK-04）+ 固定测试向量，**下游可复用** |
 
 ## 示例
@@ -182,6 +182,7 @@ impl @core.IdTokenVerifier for OfficialVerifier with fn verify(self, token, expe
 - [Discord](docs/platforms/discord.md)
 - [钉钉 DingTalk（含国际站）](docs/platforms/dingtalk.md)
 - [飞书 Feishu / Lark](docs/platforms/feishu.md)
+- [Microsoft Entra ID](docs/platforms/microsoft.md)
 - [Passkey（WebAuthn）](docs/passkey.md)
 - [TOTP（2FA）](docs/totp.md)
 - [从 v1「认证服务」迁移](docs/migration-from-v1-service.md)

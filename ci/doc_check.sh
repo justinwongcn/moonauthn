@@ -51,7 +51,7 @@ have() { grep -qx -- "$1" <<<"${KNOWN}"; }
 # 可跨行书写：匹配按「空格包围」进行，先把换行归一为空格。
 OUR_PKGS=" core oauth oidc passkey totp rand store_memory store-memory
   contract qa_verify seam_probe http_e2e google apple x wechat qq alipay
-  github discord dingtalk feishu "
+  github discord dingtalk feishu microsoft "
 OUR_PKGS="${OUR_PKGS//$'\n'/ }"
 in_our_pkgs() { [[ "${OUR_PKGS}" == *" $1 "* ]]; }
 

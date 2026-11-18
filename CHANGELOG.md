@@ -115,6 +115,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **microsoft：新增 Microsoft Entra ID provider**（依据 2026-11-13 已核验调研文档
+  `docs/providers/microsoft.md`，经 worktree 实现）。v2.0 授权码 + OIDC：`MicrosoftConfig`
+  显式 tenant 策略（`common`/`organizations`/`consumers`/tenant-id，默认 `common`），
+  端点 / JWKS 按 tenant 展开；PKCE S256 与 `nonce` 恒发；scope 默认
+  `openid profile email`（refresh 由调用方追加 `offline_access`）。🔴 **per-tenant
+  issuer 派生**：换 token 后从未验签 claims 取 `tid`（仅用于选 issuer / 租户策略，
+  不参与身份语义）→ `allowed_tenant_ids` 白名单（非空时不命中即
+  `ProviderError("tenant_not_allowed")`）→ 按 `issuer_template`
+  （默认 `https://login.microsoftonline.com/{tid}/v2.0`）派生精确 issuer 交
+  `oidc` 验签（RS256 + per-tenant JWKS）——绝不做前缀/包含匹配。回调错误参数
+  （`error`/`error_description`，AADSTS 细节在 description）→ `provider_error`；
+  归一化：`uid = sub`（pairwise，Stable）、`email_verified` 缺省 false、
+  `display_name = name ?? preferred_username`、`extra` 含 `tid`/`oid`。
+  平台文档 `docs/platforms/microsoft.md`；descriptor / check.sh / doc_check /
+  qa_verify / README 同步；`provider_ids()` 计数断言更新为 11。
 - **CI：依赖兼容引导层 `ci/bootstrap.sh` + `ci/migrate_try.py`**（check.sh 第 0 步，幂等）。
   moon 0.1.20261104（官方 latest）移除 `try?` 语法并更改 manifest 格式要求，而
   `mizchi/experimental_crypto@0.0.2`（最新且唯一版本）与 `moonbitlang/regexp@0.3.5` 均未跟进

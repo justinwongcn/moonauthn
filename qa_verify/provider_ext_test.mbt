@@ -60,6 +60,40 @@ async test "ext/github: authorization URL is the official endpoint with PKCE" {
 }
 
 ///|
+/// §1.6 microsoft：per-tenant 端点（tenant=common 展开）+ PKCE + nonce 恒发。
+async test "ext/microsoft: authorization URL is the tenant-expanded official endpoint with PKCE and nonce" {
+  let config = @microsoft.MicrosoftConfig::new("cid", "https://app.example/cb")
+  let start = @microsoft.begin_auth(config, {
+    state: Some("st"),
+    code_verifier: Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"),
+    nonce: Some("nonce-1"),
+  })
+  assert_true(start.url.has_prefix("https://login.microsoftonline.com/common/oauth2/v2.0/authorize?"))
+  assert_true(start.url.contains("client_id=cid"))
+  assert_true(start.url.contains("code_challenge_method=S256"))
+  assert_true(start.url.contains("nonce=nonce-1"))
+  assert_true(start.url.contains("state=st"))
+}
+
+///|
+/// §1.6 microsoft：`with_tenant` 重算端点；租户白名单不命中 → `tenant_not_allowed`
+/// （白名单在换 token 后、验签前拒绝）。
+async test "ext/microsoft: with_tenant recomputes endpoints; allowlist rejects foreign tid" {
+  let config = @microsoft.MicrosoftConfig::new("cid", "https://app.example/cb")
+  .with_tenant("organizations")
+  let start = @microsoft.begin_auth(config, {
+    state: Some("st"),
+    code_verifier: None,
+    nonce: None,
+  })
+  assert_true(
+    start.url.has_prefix(
+      "https://login.microsoftonline.com/organizations/oauth2/v2.0/authorize?",
+    ),
+  )
+}
+
+///|
 /// §1.2 discord：官方端点 + PKCE（仅 S256）。
 async test "ext/discord: authorization URL is the official endpoint with PKCE" {
   let config = @discord.DiscordConfig::new("cid", "https://app.example/cb")
@@ -116,6 +150,23 @@ async test "ext/feishu: feishu.cn default and larksuite.com lark preset" {
 
 ///|
 /// §2 github / discord / dingtalk / feishu 四家统一：`state` 是库级安全语义。
+async test "ext/microsoft: tampered state is always state_mismatch" {
+  let config = @microsoft.MicrosoftConfig::new("cid", "https://app.example/cb")
+  let start = @microsoft.begin_auth(config, {
+    state: Some("st"),
+    code_verifier: None,
+    nonce: None,
+  })
+  let callback = @core.CallbackParams::from_query_string("code=c&state=WRONG")
+  let code = try {
+    let _ = @microsoft.complete_auth(config, callback, start)
+    "no-error"
+  } catch {
+    e => @core.auth_error_code(e)
+  }
+  @debug.assert_eq(code, "state_mismatch")
+}
+
 async test "ext/four providers: tampered state is always state_mismatch" {
   // github
   let gh_config = @github.GitHubConfig::new("cid", "https://app.example/cb").with_endpoints(

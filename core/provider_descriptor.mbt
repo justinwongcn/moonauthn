@@ -91,6 +91,14 @@ pub fn all_providers() -> Array[ProviderDescriptor] {
       uid_kind: Stable,
       doc_url: DOC_URL_PREFIX + "feishu.md",
     },
+    {
+      id: "microsoft",
+      display_name: "Microsoft Entra ID",
+      supports_pkce: true,
+      supports_id_token: true,
+      uid_kind: Stable,
+      doc_url: DOC_URL_PREFIX + "microsoft.md",
+    },
   ]
 }
 

@@ -21,6 +21,7 @@ import {
   "justinwongcn/moonauth/provider/discord" @discord,
   "justinwongcn/moonauth/provider/dingtalk" @dingtalk,
   "justinwongcn/moonauth/provider/feishu" @feishu,
+  "justinwongcn/moonauth/provider/microsoft" @microsoft,
   "moonbitstack/mooncrypt/sign/ecdsa" @ecdsa,
   "moonbitstack/mooncrypt/rsa" @rsa,
   "mizchi/experimental_crypto/webauthn" @webauthn,

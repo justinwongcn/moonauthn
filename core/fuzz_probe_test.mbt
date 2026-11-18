@@ -45,3 +45,22 @@ test "FUZZ: CallbackParams query parsing never panics on garbage" {
     let _ = cb.provider_error()
   }
 }
+
+///|
+/// P1（黑客审计第 1 轮观察 → 回归）：percent_decode 的对抗形态——截断转义与非
+/// 法 hex 原样保留、NUL 字节不丢弃、分号不是分隔符、值内 `=` 保留、裸键为空值。
+test "P1: percent_decode adversarial shapes" {
+  @debug.assert_eq(@core.CallbackParams::from_query_string("a=%4").get("a"), Some("%4"))
+  @debug.assert_eq(@core.CallbackParams::from_query_string("a=%GG").get("a"), Some("%GG"))
+  let nul = @core.CallbackParams::from_query_string("a=x%00y").get("a")
+  match nul {
+    Some(s) => @debug.assert_eq(s.length(), 3)
+    None => abort("P1: %00 was dropped")
+  }
+  @debug.assert_eq(
+    @core.CallbackParams::from_query_string("a=b;c=d").get("a"),
+    Some("b;c=d"),
+  )
+  @debug.assert_eq(@core.CallbackParams::from_query_string("a=b=c").get("a"), Some("b=c"))
+  @debug.assert_eq(@core.CallbackParams::from_query_string("flag").get("flag"), Some(""))
+}
