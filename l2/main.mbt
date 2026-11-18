@@ -1,22 +1,27 @@
 //! moonauth / l2 —— **L2 真实回流 harness**（Owner 手动运行；不入 CI、不入库凭据）。
 //!
-//! 用途：验证各平台「成功响应形状」（实现契约 §14.1 的真实请求验证）。
-//!
-//! 流程（粘贴回调 URL 模式，零回调服务器、零端口占用）：
+//! 流程（**回调自动捕获**——Owner 只需在浏览器完成登录授权）：
 //! 1. 读 `l2/config.json`（凭据，已 gitignore；模板 `config.example.json`）；
 //! 2. 按 `platform` 构造 provider 配置 → `begin_auth` → 打印授权 URL；
-//! 3. Owner 在浏览器完成登录授权——浏览器跳转到 redirect_uri（无需本地监听，
-//!    打不开也正常）；
-//! 4. 把地址栏**完整回调 URL** 粘贴到 `l2/callback.txt` 并保存；
-//! 5. harness 轮询捕获（1s 间隔，超时 `timeout_seconds`）→ 解析 query →
-//!    `complete_auth` → 打印 L2 记录。
+//! 3. Owner 在浏览器完成登录授权——浏览器跳转到
+//!    `http://localhost:9876/callback?code=...&state=...`；
+//! 4. harness 的回调服务器**自动捕获** query → `complete_auth` → 打印 L2 记录。
+//!
+//! 双模式兜底：若浏览器与 harness 不在同一台机器（远程开发），回调自动捕获不可达——
+//! 此时把地址栏完整 URL 粘贴到 `l2/callback.txt` 并保存，轮询同样会捕获（paste 模式）。
 //!
 //! 🔴 凭据绝不入库：`l2/config.json` / `l2/callback.txt` / `l2/records/` 均已 gitignore。
-//! 🔴 apple 不在本 harness（form_post 回调的 code 在 POST 体里，粘贴模式拿不到 +
-//! 需付费开发者资质）；qq 需备案域名。
+//! 🔴 apple 不在本 harness（form_post 回调的 code 在 POST 体里 + 需付费开发者资质）；
+//!    qq 需备案域名。
 
 let config_path : String = "l2/config.json"
 let callback_path : String = "l2/callback.txt"
+
+///|
+struct L2Capture {
+  mut path : String
+  mut paste : String
+}
 
 ///|
 fn jstr(o : Map[String, Json], key : String) -> String {
@@ -59,32 +64,60 @@ fn jint(o : Map[String, Json], key : String, default : Int) -> Int {
 }
 
 ///|
-/// 等待回调 URL：轮询 `callback_path`（1s 间隔），超时 `timeout_s` 秒。
-/// 捕获后返回**原始粘贴内容**（完整 URL 或裸 query 均可）。
-async fn wait_callback(timeout_s : Int) -> String raise @core.AuthError {
-  println("== 等待回调 ==")
+/// 回调捕获服务器：浏览器 redirect 命中 `/callback?...` 时记录完整 path（含 query）
+/// 并回显友好页面。`capture` 以引用共享，主流程轮询读取。
+async fn start_callback_server(
+  group : @async.TaskGroup[Unit],
+  port : Int,
+  capture : L2Capture,
+) -> Unit {
+  let server = @http.Server(@socket.Addr::parse("127.0.0.1:\{port}"))
+  group.add_defer(() => server.close())
+  group.spawn_bg(no_wait=true) <| () => {
+    server.run_forever() <| ((req, _body, conn) => {
+      capture.path = req.path
+      conn
+      ..send_response(200, "OK", extra_headers={
+        "Content-Type": "text/html; charset=utf-8",
+      })
+      .write(
+        "<html><body style=\"font-family:sans-serif\"><h3>✓ 授权完成</h3><p>已收到回调，可以关闭此窗口，回到终端查看 L2 记录。</p></body></html>",
+      )
+    })
+  }
+}
+
+///|
+/// 双模式等待：①回调服务器捕获（浏览器 redirect 自动命中）；②Owner 粘贴到
+/// `callback.txt` 的 URL（远程开发场景）。超时 `timeout_s` 秒。
+async fn wait_capture(capture : L2Capture, timeout_s : Int) -> String raise @core.AuthError {
+  println("== 等待授权回调 ==")
   println(
-    "完成授权后，把浏览器地址栏的完整回调 URL 写入 \{callback_path} 并保存（\{timeout_s}s 内）",
+    "在浏览器完成登录授权后，回调会被自动捕获；若 harness 与浏览器不在同一台机器，把地址栏完整 URL 粘贴到 \{callback_path} 并保存。超时 \{timeout_s}s。",
   )
   let mut waited = 0
   while waited < timeout_s {
-    let txt = @async_fs.read_file(callback_path).text() catch {
+    if capture.path.length() > 0 {
+      println("已捕获浏览器回调（等待 \{waited}s）")
+      return capture.path
+    }
+    let paste = @async_fs.read_file(callback_path).text() catch {
       _ => ""
     }
-    if txt.length() > 0 {
-      println("已捕获回调 URL（等待 \{waited}s）")
-      return txt
+    if paste.length() > 0 {
+      println("已捕获粘贴的回调 URL（等待 \{waited}s）")
+      return paste
     }
     @async.sleep(1000)
     waited = waited + 1
   }
   raise @core.Network(
-    "moonauth: L2 等待回调超时（\{timeout_s}s）——未捕获 " + callback_path,
+    "moonauth: L2 等待回调超时（\{timeout_s}s）——回调未命中且 callback.txt 为空",
   )
 }
 
 ///|
-/// 从粘贴内容提取 query：取 `?` 之后、`#` 之前的部分；无 `?` 时原样返回。
+/// 从回调 path/URL 提取 query：取 `?` 之后、`#` 之前的部分；无 `?` 时原样返回。
 fn extract_query(raw : String) -> String {
   let after_q = match raw.split_once("?") {
     Some((_, rest)) => rest.to_owned()
@@ -146,280 +179,156 @@ async fn run() -> Unit raise @core.AuthError {
   }
   let timeout_s = jint(cfg, "timeout_seconds", 600)
   let section = jobj(cfg, platform)
-  let identity = if platform == "google" {
-    run_google(section, timeout_s)
-  } else if platform == "microsoft" {
-    run_microsoft(section, timeout_s)
-  } else if platform == "github" {
-    run_github(section, timeout_s)
-  } else if platform == "discord" {
-    run_discord(section, timeout_s)
-  } else if platform == "x" {
-    run_x(section, timeout_s)
-  } else if platform == "dingtalk" {
-    run_dingtalk(section, timeout_s)
-  } else if platform == "feishu" {
-    run_feishu(section, timeout_s)
-  } else if platform == "alipay" {
-    run_alipay(section, timeout_s)
-  } else if platform == "wechat" {
-    run_wechat(section, timeout_s)
-  } else if platform == "qq" {
-    run_qq(section, timeout_s)
-  } else {
-    raise @core.ParseError(
-      "moonauth: l2 未知 platform: " + platform + "（支持 google/microsoft/github/discord/x/dingtalk/feishu/alipay/wechat/qq）",
-    )
+  let callback_port = jint(cfg, "callback_port", 9876)
+  let capture = L2Capture::{ path: "", paste: "" }
+  try {
+    @async.with_task_group() <| group => {
+      start_callback_server(group, callback_port, capture)
+      try {
+      let secrets : @core.SuppliedSecrets = {
+        state: None,
+        code_verifier: None,
+        nonce: None,
+      }
+      let identity = if platform == "google" {
+      let config = @google.GoogleConfig::new(
+          jstr(section, "client_id"),
+          jstr(section, "redirect_uri"),
+        )
+        .with_client_secret(jstr(section, "client_secret"))
+      let start = @google.begin_auth(config, secrets)
+      println("== 授权 URL（浏览器打开并登录）==")
+      println(start.url)
+      let query = extract_query(wait_capture(capture, timeout_s))
+      let callback = @core.CallbackParams::from_query_string(query)
+      @google.complete_auth(config, callback, start)
+    } else if platform == "microsoft" {
+      let config = @microsoft.MicrosoftConfig::new(
+          jstr(section, "client_id"),
+          jstr(section, "redirect_uri"),
+        )
+        .with_client_secret(jstr(section, "client_secret"))
+        .with_tenant(jstr(section, "tenant"))
+        .with_allowed_tenant_ids(jstr_array(section, "allowed_tenant_ids"))
+      let start = @microsoft.begin_auth(config, secrets)
+      println("== 授权 URL（浏览器打开并登录）==")
+      println(start.url)
+      let query = extract_query(wait_capture(capture, timeout_s))
+      let callback = @core.CallbackParams::from_query_string(query)
+      @microsoft.complete_auth(config, callback, start)
+    } else if platform == "github" {
+      let config = @github.GitHubConfig::new(jstr(section, "client_id"), jstr(section, "redirect_uri"))
+      .with_client_secret(jstr(section, "client_secret"))
+      let start = @github.begin_auth(config, secrets)
+      println("== 授权 URL（浏览器打开并登录）==")
+      println(start.url)
+      let query = extract_query(wait_capture(capture, timeout_s))
+      let callback = @core.CallbackParams::from_query_string(query)
+      @github.complete_auth(config, callback, start)
+    } else if platform == "discord" {
+      let config = @discord.DiscordConfig::new(
+          jstr(section, "client_id"),
+          jstr(section, "redirect_uri"),
+        )
+        .with_client_secret(jstr(section, "client_secret"))
+      let start = @discord.begin_auth(config, secrets)
+      println("== 授权 URL（浏览器打开并登录）==")
+      println(start.url)
+      let query = extract_query(wait_capture(capture, timeout_s))
+      let callback = @core.CallbackParams::from_query_string(query)
+      @discord.complete_auth(config, callback, start)
+    } else if platform == "x" {
+      let config = @x.XConfig::new(jstr(section, "client_id"), jstr(section, "redirect_uri"))
+      let start = @x.begin_auth(config, secrets)
+      println("== 授权 URL（浏览器打开并登录）==")
+      println(start.url)
+      let query = extract_query(wait_capture(capture, timeout_s))
+      let callback = @core.CallbackParams::from_query_string(query)
+      @x.complete_auth(config, callback, start)
+    } else if platform == "dingtalk" {
+      let config = @dingtalk.DingTalkConfig::new(
+          jstr(section, "client_id"),
+          jstr(section, "client_secret"),
+          jstr(section, "redirect_uri"),
+        )
+      let start = @dingtalk.begin_auth(config, secrets)
+      println("== 授权 URL（浏览器打开并登录）==")
+      println(start.url)
+      let query = extract_query(wait_capture(capture, timeout_s))
+      let callback = @core.CallbackParams::from_query_string(query)
+      @dingtalk.complete_auth(config, callback, start)
+    } else if platform == "feishu" {
+      let config = @feishu.FeishuConfig::new(
+          jstr(section, "client_id"),
+          jstr(section, "client_secret"),
+          jstr(section, "redirect_uri"),
+        )
+      let start = @feishu.begin_auth(config, secrets)
+      println("== 授权 URL（浏览器打开并登录）==")
+      println(start.url)
+      let query = extract_query(wait_capture(capture, timeout_s))
+      let callback = @core.CallbackParams::from_query_string(query)
+      @feishu.complete_auth(config, callback, start)
+    } else if platform == "alipay" {
+      let config = @alipay.AlipayConfig::new(
+          jstr(section, "app_id"),
+          @core.SigningKey::Pem(jstr(section, "private_key_pem")),
+          jstr(section, "redirect_uri"),
+        )
+        .with_endpoints(
+          jstr(section, "gateway"),
+          jstr(section, "authorize"),
+          jstr(section, "scope"),
+        )
+      let start = @alipay.begin_auth(config, secrets)
+      println("== 授权 URL（沙箱版钱包或浏览器打开并登录）==")
+      println(start.url)
+      let query = extract_query(wait_capture(capture, timeout_s))
+      let callback = @core.CallbackParams::from_query_string(query)
+      @alipay.complete_auth(config, callback, start)
+    } else if platform == "wechat" {
+      let config = @wechat.WeChatConfig::new(
+          jstr(section, "client_id"),
+          jstr(section, "client_secret"),
+          jstr(section, "redirect_uri"),
+        )
+        .with_endpoints(
+          jstr(section, "authorize"),
+          jstr(section, "token"),
+          jstr(section, "userinfo"),
+        )
+        .with_scope(jstr(section, "scope"))
+      let start = @wechat.begin_auth(config, secrets)
+      println("== 授权 URL（微信内打开并授权；PC 浏览器会显示二维码）==")
+      println(start.url)
+      let query = extract_query(wait_capture(capture, timeout_s))
+      let callback = @core.CallbackParams::from_query_string(query)
+      @wechat.complete_auth(config, callback, start)
+    } else if platform == "qq" {
+      let config = @qq.QQConfig::new(
+          jstr(section, "client_id"),
+          jstr(section, "client_secret"),
+          jstr(section, "redirect_uri"),
+        )
+      let start = @qq.begin_auth(config, secrets)
+      println("== 授权 URL（浏览器打开并登录）==")
+      println(start.url)
+      let query = extract_query(wait_capture(capture, timeout_s))
+      let callback = @core.CallbackParams::from_query_string(query)
+      @qq.complete_auth(config, callback, start)
+    } else {
+      raise @core.ParseError(
+        "moonauth: l2 未知 platform: " + platform + "（支持 google/microsoft/github/discord/x/dingtalk/feishu/alipay/wechat/qq；apple 需付费资质不在 harness）",
+      )
+    }
+    print_record(platform, identity)
+      } catch {
+        e => println("L2 失败: " + @core.auth_error_message(e))
+      }
+    }
+  } catch {
+    e => println("L2 外层失败: \{e}")
   }
-  print_record(platform, identity)
-}
-
-///|
-/// google：GCP 免费创建 OAuth 客户端（Web，redirect 填 http://localhost:9876/callback），
-/// 测试用户添加自己的账号（外部应用测试模式即时生效）。
-async fn run_google(
-  sec : Map[String, Json],
-  timeout_s : Int,
-) -> @core.ExternalIdentity raise @core.AuthError {
-  let config = @google.GoogleConfig::new(jstr(sec, "client_id"), jstr(sec, "redirect_uri"))
-  let secret = jstr(sec, "client_secret")
-  let config = if secret.length() > 0 {
-    config.with_client_secret(secret)
-  } else {
-    config
-  }
-  let secrets : @core.SuppliedSecrets = {
-    state: None,
-    code_verifier: None,
-    nonce: None,
-  }
-  let start = @google.begin_auth(config, secrets)
-  println("== 授权 URL（浏览器打开并登录）==")
-  println(start.url)
-  let query = extract_query(wait_callback(timeout_s))
-  let callback = @core.CallbackParams::from_query_string(query)
-  @google.complete_auth(config, callback, start)
-}
-
-///|
-/// microsoft：Entra 免费租户应用注册（Web redirect，http://localhost 允许）；
-/// tenant 默认 organizations；allowed_tenant_ids 非空时启用租户白名单。
-async fn run_microsoft(
-  sec : Map[String, Json],
-  timeout_s : Int,
-) -> @core.ExternalIdentity raise @core.AuthError {
-  let config = @microsoft.MicrosoftConfig::new(jstr(sec, "client_id"), jstr(sec, "redirect_uri"))
-  .with_client_secret(jstr(sec, "client_secret"))
-  .with_tenant(jstr(sec, "tenant"))
-  .with_allowed_tenant_ids(jstr_array(sec, "allowed_tenant_ids"))
-  let secrets : @core.SuppliedSecrets = {
-    state: None,
-    code_verifier: None,
-    nonce: None,
-  }
-  let start = @microsoft.begin_auth(config, secrets)
-  println("== 授权 URL（浏览器打开并登录）==")
-  println(start.url)
-  let query = extract_query(wait_callback(timeout_s))
-  let callback = @core.CallbackParams::from_query_string(query)
-  @microsoft.complete_auth(config, callback, start)
-}
-
-///|
-/// github：OAuth App 即时创建（Settings → Developer settings），回调
-/// http://localhost:9876/callback；测试用户 = 自己的 GitHub 账号。
-async fn run_github(
-  sec : Map[String, Json],
-  timeout_s : Int,
-) -> @core.ExternalIdentity raise @core.AuthError {
-  let config = @github.GitHubConfig::new(jstr(sec, "client_id"), jstr(sec, "redirect_uri"))
-  .with_client_secret(jstr(sec, "client_secret"))
-  let secrets : @core.SuppliedSecrets = {
-    state: None,
-    code_verifier: None,
-    nonce: None,
-  }
-  let start = @github.begin_auth(config, secrets)
-  println("== 授权 URL（浏览器打开并登录）==")
-  println(start.url)
-  let query = extract_query(wait_callback(timeout_s))
-  let callback = @core.CallbackParams::from_query_string(query)
-  @github.complete_auth(config, callback, start)
-}
-
-///|
-/// discord：开发者后台即时创建应用（OAuth2 → redirect）。
-async fn run_discord(
-  sec : Map[String, Json],
-  timeout_s : Int,
-) -> @core.ExternalIdentity raise @core.AuthError {
-  let config = @discord.DiscordConfig::new(jstr(sec, "client_id"), jstr(sec, "redirect_uri"))
-  .with_client_secret(jstr(sec, "client_secret"))
-  let secrets : @core.SuppliedSecrets = {
-    state: None,
-    code_verifier: None,
-    nonce: None,
-  }
-  let start = @discord.begin_auth(config, secrets)
-  println("== 授权 URL（浏览器打开并登录）==")
-  println(start.url)
-  let query = extract_query(wait_callback(timeout_s))
-  let callback = @core.CallbackParams::from_query_string(query)
-  @discord.complete_auth(config, callback, start)
-}
-
-///|
-/// x：免费开发者账号（User authentication settings 开启 OAuth 2.0）。
-async fn run_x(
-  sec : Map[String, Json],
-  timeout_s : Int,
-) -> @core.ExternalIdentity raise @core.AuthError {
-  let config = @x.XConfig::new(jstr(sec, "client_id"), jstr(sec, "redirect_uri"))
-  let secrets : @core.SuppliedSecrets = {
-    state: None,
-    code_verifier: None,
-    nonce: None,
-  }
-  let start = @x.begin_auth(config, secrets)
-  println("== 授权 URL（浏览器打开并登录）==")
-  println(start.url)
-  let query = extract_query(wait_callback(timeout_s))
-  let callback = @core.CallbackParams::from_query_string(query)
-  @x.complete_auth(config, callback, start)
-}
-
-///|
-/// dingtalk：个人可创建企业内部应用（扫码登录）；测试组织可用于授权账号。
-async fn run_dingtalk(
-  sec : Map[String, Json],
-  timeout_s : Int,
-) -> @core.ExternalIdentity raise @core.AuthError {
-  let config = @dingtalk.DingTalkConfig::new(
-    jstr(sec, "client_id"),
-    jstr(sec, "client_secret"),
-    jstr(sec, "redirect_uri"),
-  )
-  let secrets : @core.SuppliedSecrets = {
-    state: None,
-    code_verifier: None,
-    nonce: None,
-  }
-  let start = @dingtalk.begin_auth(config, secrets)
-  println("== 授权 URL（浏览器打开并登录）==")
-  println(start.url)
-  let query = extract_query(wait_callback(timeout_s))
-  let callback = @core.CallbackParams::from_query_string(query)
-  @dingtalk.complete_auth(config, callback, start)
-}
-
-///|
-/// feishu：免费创建企业自建应用 + 测试企业（免审核）；redirect 配置在应用安全设置。
-async fn run_feishu(
-  sec : Map[String, Json],
-  timeout_s : Int,
-) -> @core.ExternalIdentity raise @core.AuthError {
-  let config = @feishu.FeishuConfig::new(
-    jstr(sec, "client_id"),
-    jstr(sec, "client_secret"),
-    jstr(sec, "redirect_uri"),
-  )
-  let secrets : @core.SuppliedSecrets = {
-    state: None,
-    code_verifier: None,
-    nonce: None,
-  }
-  let start = @feishu.begin_auth(config, secrets)
-  println("== 授权 URL（浏览器打开并登录）==")
-  println(start.url)
-  let query = extract_query(wait_callback(timeout_s))
-  let callback = @core.CallbackParams::from_query_string(query)
-  @feishu.complete_auth(config, callback, start)
-}
-
-///|
-/// alipay：**官方沙箱**（沙箱 appid + 应用私钥/支付宝公钥 + 沙箱网关 + 沙箱版钱包
-/// 登录授权）；gateway/authorize 按 config 覆盖（默认生产端点，L2 请用沙箱值）。
-async fn run_alipay(
-  sec : Map[String, Json],
-  timeout_s : Int,
-) -> @core.ExternalIdentity raise @core.AuthError {
-  let config = @alipay.AlipayConfig::new(
-    jstr(sec, "app_id"),
-    @core.SigningKey::Pem(jstr(sec, "private_key_pem")),
-    jstr(sec, "redirect_uri"),
-  )
-  .with_endpoints(
-    jstr(sec, "gateway"),
-    jstr(sec, "authorize"),
-    jstr(sec, "scope"),
-  )
-  let secrets : @core.SuppliedSecrets = {
-    state: None,
-    code_verifier: None,
-    nonce: None,
-  }
-  let start = @alipay.begin_auth(config, secrets)
-  println("== 授权 URL（沙箱版钱包或浏览器打开并登录）==")
-  println(start.url)
-  let query = extract_query(wait_callback(timeout_s))
-  let callback = @core.CallbackParams::from_query_string(query)
-  @alipay.complete_auth(config, callback, start)
-}
-
-///|
-/// wechat：L2 用**公众号测试号**（个人免费即时开通，网页授权回调域名可填
-/// 127.0.0.1）——端点经 config 覆盖为公众号网页授权形态（snsapi_userinfo）；
-/// qrconnect 主形态需企业资质，验收差异已记平台文档。
-async fn run_wechat(
-  sec : Map[String, Json],
-  timeout_s : Int,
-) -> @core.ExternalIdentity raise @core.AuthError {
-  let config = @wechat.WeChatConfig::new(
-    jstr(sec, "client_id"),
-    jstr(sec, "client_secret"),
-    jstr(sec, "redirect_uri"),
-  )
-  .with_endpoints(
-    jstr(sec, "authorize"),
-    jstr(sec, "token"),
-    jstr(sec, "userinfo"),
-  )
-  .with_scope(jstr(sec, "scope"))
-  let secrets : @core.SuppliedSecrets = {
-    state: None,
-    code_verifier: None,
-    nonce: None,
-  }
-  let start = @wechat.begin_auth(config, secrets)
-  println("== 授权 URL（微信内打开并授权；PC 浏览器会显示二维码）==")
-  println(start.url)
-  let query = extract_query(wait_callback(timeout_s))
-  let callback = @core.CallbackParams::from_query_string(query)
-  @wechat.complete_auth(config, callback, start)
-}
-
-///|
-/// qq：个人可注册开发者，但**回调域名必须 ICP 备案**——L2 需备案域名（或推迟）。
-async fn run_qq(
-  sec : Map[String, Json],
-  timeout_s : Int,
-) -> @core.ExternalIdentity raise @core.AuthError {
-  let config = @qq.QQConfig::new(
-    jstr(sec, "client_id"),
-    jstr(sec, "client_secret"),
-    jstr(sec, "redirect_uri"),
-  )
-  let secrets : @core.SuppliedSecrets = {
-    state: None,
-    code_verifier: None,
-    nonce: None,
-  }
-  let start = @qq.begin_auth(config, secrets)
-  println("== 授权 URL（浏览器打开并登录）==")
-  println(start.url)
-  let query = extract_query(wait_callback(timeout_s))
-  let callback = @core.CallbackParams::from_query_string(query)
-  @qq.complete_auth(config, callback, start)
 }
 
 ///|

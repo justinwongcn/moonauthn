@@ -14,6 +14,8 @@ import {
   "moonbitlang/core/debug",
   "moonbitlang/async",
   "moonbitlang/async/fs" @async_fs,
+  "moonbitlang/async/http" @http,
+  "moonbitlang/async/socket" @socket,
 }
 
 options(supported_targets: "+native")

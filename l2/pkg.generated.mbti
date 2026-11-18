@@ -6,6 +6,7 @@ package "justinwongcn/moonauth/l2"
 // Errors
 
 // Types and methods
+type L2Capture
 
 // Type aliases
 
