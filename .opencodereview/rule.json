@@ -1,0 +1,16 @@
+{
+  "include": [
+    "**/*.mbt",
+    "**/*.mbti"
+  ],
+  "exclude": [
+    "_build/**",
+    ".mooncakes/**"
+  ],
+  "rules": [
+    {
+      "pattern": "**/*.mbt",
+      "instructions": "MoonBit 语言代码。注意:String::compare 是长度优先而非字典序;seam 必须是 pub(open) trait;可能 raise @core.AuthError 的函数体内不能用 assert_true/assert_false。审查重点:正确性、边界条件、错误处理、AuthError 分支使用是否恰当。"
+    }
+  ]
+}
