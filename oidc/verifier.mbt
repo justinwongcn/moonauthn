@@ -86,6 +86,7 @@ async fn JwksIdTokenVerifier::verify_token(
   check_exp(claims)
   check_issuer(claims, expect.issuers)
   check_nonce(claims, expect.nonce)
+  check_azp(claims, expect.audiences)
   build_claims(claims)
 }
 
@@ -276,6 +277,27 @@ fn check_nonce(claims : Map[String, Json], nonce : String?) -> Unit raise @core.
       if actual != expected {
         raise @core.NonceMismatch
       }
+    }
+  }
+}
+
+///|
+/// 🔴 OIDC Core §3.1.3.7（实现契约 §4.2 azp；黑客审计实测确认）：`aud` 为**多值
+/// 数组**时，`azp` 必须存在且等于期望受众之一——否则「为其他受众签发」的 token
+/// （aud 数组恰好包含我们的 client_id、azp=他方应用）可通过全部校验并被复用。
+/// 单值 `aud` 不强制 `azp`（Google/Entra 单资源形态，向后兼容）。
+fn check_azp(
+  claims : Map[String, Json],
+  audiences : Array[String],
+) -> Unit raise @core.AuthError {
+  let aud_values = audience_of(claims)
+  if aud_values.length() > 1 {
+    match str_claim(claims, "azp") {
+      Some(azp) =>
+        if !audiences.contains(azp) {
+          raise @core.AudienceMismatch(azp, audiences.join(","))
+        }
+      None => raise @core.AudienceMismatch("<missing azp>", audiences.join(","))
     }
   }
 }

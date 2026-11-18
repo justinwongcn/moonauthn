@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- **oidc：多受众 id_token 的 `azp` 校验**（合规审计 F13，JEV 确认 0.992；OIDC Core
+  §3.1.3.7 / 实现契约 §4.2）。`aud` 为**多值数组**时，`azp` 必须存在且等于期望受众
+  之一，否则 `AudienceMismatch`——实测（microsoft 流程）：`aud=[期望,他方]` 且
+  `azp=他方` 的 token 此前**通过全部校验并归一身份**。单值 `aud` 不强制 `azp`
+  （Google/Entra 单资源形态，向后兼容）。
 - **totp：验证窗口改「仅回看」，不再接受未来时间步**（黑客审计第 2 轮，JEV 确认 0.993）。
   `verify` 此前为 `±window` 对称——T=29 校验 step1 的码被接受（RFC 6238 附录 B 向量实测）。
   接受未来步把在线爆破窗口从 2 步扩大到 3 步、并接受预先生成的未来码，与实现契约

@@ -9,6 +9,7 @@ import {
 import {
   "justinwongcn/moonauth/contract" @contract,
   "justinwongcn/moonauth/oauth" @oauth,
+  "moonbitstack/mooncrypt/rsa" @rsa,
   "moonbitlang/core/debug",
   "moonbitlang/core/encoding/utf8" @utf8,
   "moonbitlang/async",

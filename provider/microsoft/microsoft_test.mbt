@@ -313,3 +313,72 @@ async test "microsoft: state mismatch is rejected" {
   }
   @debug.assert_eq(code, "state_mismatch")
 }
+
+///|
+/// 🔴 回归（黑客审计 F13，JEV 0.992）：多受众 token（aud 含我们的 client_id）但
+/// `azp` 指向他方应用——OIDC Core §3.1.3.7 要求校验 azp，必须拒绝，防止「为其他
+/// 受众签发」的 token 被复用。
+async test "microsoft: multi-audience token with foreign azp is rejected" {
+  let claims = "{\"iss\":\"https://login.microsoftonline.com/" +
+  msft_tid +
+  "/v2.0\",\"aud\":[\"client-1\",\"attacker-client\"],\"azp\":\"attacker-client\",\"sub\":\"user-msft\",\"tid\":\"" +
+  msft_tid +
+  "\",\"nonce\":\"nonce-1\",\"iat\":1699999000,\"exp\":1700003600}"
+  let client : &@core.HttpClient = @contract.MockHttpClient::new([
+    msft_token_ok(claims),
+    msft_jwks_response(),
+  ])
+  let clock : &@core.Clock = @contract.FixedClock::new(@contract.fixed_now_unix())
+  let config = @microsoft.MicrosoftConfig::new("client-1", "https://app.example/cb")
+  .with_client_secret("secret-1")
+  .with_endpoints("mock://authorize", "mock://token", "mock://jwks")
+  .with_http(client).with_clock(clock)
+  let secrets : @core.SuppliedSecrets = {
+    state: Some("st-123"),
+    code_verifier: Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"),
+    nonce: Some("nonce-1"),
+  }
+  let start = @microsoft.begin_auth(config, secrets)
+  let callback = @core.CallbackParams::from_query_string(
+    "code=auth-code-1&state=st-123",
+  )
+  let code = try {
+    let _ = @microsoft.complete_auth(config, callback, start)
+    "no-error"
+  } catch {
+    e => @core.auth_error_code(e)
+  }
+  @debug.assert_eq(code, "audience_mismatch")
+}
+
+///|
+/// 多受众 token 但 `azp` = 期望受众（client-1）→ 正常通过（OIDC 合规形态）。
+async test "microsoft: multi-audience token with correct azp passes" {
+  let claims = "{" +
+  "\"iss\":\"https://login.microsoftonline.com/" +
+  msft_tid +
+  "/v2.0\",\"aud\":[\"client-1\",\"other-resource\"],\"azp\":\"client-1\",\"sub\":\"user-msft\",\"tid\":\"" +
+  msft_tid +
+  "\",\"nonce\":\"nonce-1\",\"iat\":1699999000,\"exp\":1700003600}"
+  let client : &@core.HttpClient = @contract.MockHttpClient::new([
+    msft_token_ok(claims),
+    msft_jwks_response(),
+  ])
+  let config = @microsoft.MicrosoftConfig::new("client-1", "https://app.example/cb")
+  .with_client_secret("secret-1")
+  .with_endpoints("mock://authorize", "mock://token", "mock://jwks")
+  .with_http(client)
+  let clock : &@core.Clock = @contract.FixedClock::new(@contract.fixed_now_unix())
+  let config = config.with_clock(clock)
+  let secrets : @core.SuppliedSecrets = {
+    state: Some("st-123"),
+    code_verifier: Some("verifier-1abcdefghijklmnopqrstuvwxyz0123456789-._~"),
+    nonce: Some("nonce-1"),
+  }
+  let start = @microsoft.begin_auth(config, secrets)
+  let callback = @core.CallbackParams::from_query_string(
+    "code=auth-code-1&state=st-123",
+  )
+  let identity = @microsoft.complete_auth(config, callback, start)
+  @debug.assert_eq(identity.uid, "user-msft")
+}
