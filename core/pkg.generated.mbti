@@ -153,6 +153,7 @@ pub fn CallbackParams::from_pairs(Map[String, String]) -> Self
 pub fn CallbackParams::from_query_string(String) -> Self
 pub fn CallbackParams::get(Self, String) -> String?
 pub fn CallbackParams::provider_error(Self) -> AuthError?
+pub fn CallbackParams::required_non_empty(Self, String) -> String raise AuthError
 
 pub(all) struct ExternalIdentity {
   provider : String

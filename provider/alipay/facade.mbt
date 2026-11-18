@@ -71,13 +71,10 @@ pub impl AlipayProvider for DefaultAlipayProvider with fn complete_auth(
   if state != expected.state {
     raise @core.StateMismatch
   }
+  // 🔴 `auth_code` / `code` 双形态都要求**非空**（契约 §3.2.5）。
   let code = match callback.get("auth_code") {
-    Some(c) => c
-    None =>
-      match callback.get("code") {
-        Some(c) => c
-        None => raise @core.MissingParam("auth_code")
-      }
+    Some(c) => if c.length() > 0 { c } else { callback.required_non_empty("code") }
+    None => callback.required_non_empty("code")
   }
   let token = alipay_fetch_token(self.config, code)
   let access_token = match token.get("access_token") {

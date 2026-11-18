@@ -39,7 +39,12 @@ async fn discord_fetch_user(
 pub fn discord_identity(user_json : String) -> @core.ExternalIdentity raise @core.AuthError {
   let user = discord_object(user_json, "user response")
   let uid = match discord_string_opt(user.get("id")) {
-    Some(id) => id
+    // 🔴 空串视为缺失（契约 §2.2；同 dingtalk/feishu non_empty 先例）。
+    Some(id) => if id.length() > 0 {
+      id
+    } else {
+      raise @core.ParseError("moonauth: discord user response has empty id")
+    }
     None => raise @core.ParseError("moonauth: discord user response missing id")
   }
   let display_name = match discord_string_opt(user.get("global_name")) {

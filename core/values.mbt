@@ -160,6 +160,27 @@ pub fn CallbackParams::provider_error(self : CallbackParams) -> AuthError? {
 }
 
 ///|
+/// 回调**必需参数**的统一取值（实现契约 §3.2.5「授权码存在且长度合理」）：
+/// 参数存在且**非空**才返回；缺失或空串一律 `MissingParam(key)`（空串视为缺失）。
+///
+/// 🔴 供各 provider 在 state 校验后提取 `code` / `auth_code` / `id_token` 等使用——
+/// 此前 `Some("")` 会直接通过「存在性检查」并带着空值发起出站请求（黑客审计 E1 实测）。
+pub fn CallbackParams::required_non_empty(
+  self : CallbackParams,
+  key : String,
+) -> String raise AuthError {
+  match self.params.get(key) {
+    Some(v) =>
+      if v.length() > 0 {
+        v
+      } else {
+        raise MissingParam(key)
+      }
+    None => raise MissingParam(key)
+  }
+}
+
+///|
 /// `begin_*` 的返回值。临时态随返回值交给调用方持有（零状态）。
 pub(all) struct AuthStart {
   /// 供浏览器跳转的授权 URL。

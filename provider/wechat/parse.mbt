@@ -28,8 +28,14 @@ pub fn wechat_parse_token(body : String) -> WeChatToken raise @core.AuthError {
     Some(String(s)) => s
     _ => raise @core.ParseError("moonauth: wechat token response missing access_token")
   }
+  // 🔴 空串视为缺失（同 qq：空 openid 会产出 uid="" 的可碰撞身份）。
   let openid = match m.get("openid") {
-    Some(String(s)) => s
+    Some(String(s)) =>
+      if s.length() > 0 {
+        s
+      } else {
+        raise @core.ParseError("moonauth: wechat token response has empty openid")
+      }
     _ => raise @core.ParseError("moonauth: wechat token response missing openid")
   }
   let unionid = match m.get("unionid") {

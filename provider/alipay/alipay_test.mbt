@@ -299,3 +299,44 @@ async test "alipay: missing both open_id and user_id is a parse error" {
   }
   @debug.assert_eq(code, "parse_error")
 }
+
+///|
+/// 🔴 空 `auth_code`（黑客审计 E1，JEV 0.992）：空串视为缺失，回退 `code` 参数；
+/// 两处均空 → `missing_param`。契约 §3.2.5「授权码存在且长度合理」。
+async test "alipay: empty auth_code falls back to code; both empty is missing_param" {
+  let client : &@core.HttpClient = @contract.MockHttpClient::new([
+    {
+      status: 200,
+      headers: Map([("Content-Type", "application/json")]),
+      body: "{\"alipay_system_oauth_token_response\":{\"access_token\":\"AT\",\"user_id\":\"2088\",\"expires_in\":3600}}",
+    },
+    {
+      status: 200,
+      headers: Map([("Content-Type", "application/json")]),
+      body: "{\"alipay_user_info_share_response\":{\"user_id\":\"2088\"}}",
+    },
+  ])
+  let config = alipay_config().with_endpoints(
+    "mock://gateway",
+    "https://openauth.alipay.com/oauth2/publicAppAuthorize.htm",
+    "auth_user",
+  ).with_http(client)
+  let start = @alipay.begin_auth(config, {
+    state: Some("st-1"),
+    code_verifier: None,
+    nonce: None,
+  })
+  // 空 auth_code 回退到非空 code → 正常流程。
+  let cb = @core.CallbackParams::from_query_string("auth_code=&code=REAL&state=st-1")
+  let identity = @alipay.complete_auth(config, cb, start)
+  @debug.assert_eq(identity.uid, "2088")
+  // 两处均空 → missing_param。
+  let cb2 = @core.CallbackParams::from_query_string("auth_code=&code=&state=st-1")
+  let code = try {
+    let _ = @alipay.complete_auth(config, cb2, start)
+    "no-error"
+  } catch {
+    e => @core.auth_error_code(e)
+  }
+  @debug.assert_eq(code, "missing_param")
+}

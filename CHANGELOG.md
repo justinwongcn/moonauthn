@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- **core / 11 provider：空授权码 fail-closed**（黑客审计 E1，JEV 确认 0.992；契约
+  §3.2.5「授权码存在且**长度合理**」）。新增 `CallbackParams::required_non_empty`：
+  全部 backend 的 `code` / `auth_code` / `id_token` / `state` 提取统一改用——空字符串
+  此前会通过「存在性检查」并发起注定失败的出站 token 请求，现归一为 `missing_param`。
+  支付宝 `auth_code`/`code` 双形态保留非空回退语义。
+- **qq / wechat / discord / oidc：空标识符拒绝**（黑客审计 E2，JEV 确认 0.979；契约
+  §2.2「subject 必须存在且非空」）。空 `openid` / 空 `id` / 空 `sub` 此前会归一为
+  `uid=""` 的身份（落进调用方映射表可与其它空串身份碰撞，qq 甚至标 `Stable`）；
+  现一律 `ParseError` 拒绝（dingtalk/feishu 已有同款防线，本批补齐 qq/wechat/
+  discord/oidc sub）。
 - **oidc：多受众 id_token 的 `azp` 校验**（合规审计 F13，JEV 确认 0.992；OIDC Core
   §3.1.3.7 / 实现契约 §4.2）。`aud` 为**多值数组**时，`azp` 必须存在且等于期望受众
   之一，否则 `AudienceMismatch`——实测（microsoft 流程）：`aud=[期望,他方]` 且

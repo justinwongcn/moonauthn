@@ -307,7 +307,13 @@ fn check_azp(
 /// 字符串化进 `raw : Map[String, String]`）。
 fn build_claims(claims : Map[String, Json]) -> @core.IdTokenClaims raise @core.AuthError {
   let subject = match str_claim(claims, "sub") {
-    Some(s) => s
+    // 🔴 空串视为缺失（契约 §2.2 subject 非空；黑客审计 E2 同口径）。
+    Some(s) =>
+      if s.length() > 0 {
+        s
+      } else {
+        raise @core.ParseError("moonauth: id_token has empty sub")
+      }
     None => raise @core.ParseError("moonauth: id_token missing sub")
   }
   let issuer = match str_claim(claims, "iss") {

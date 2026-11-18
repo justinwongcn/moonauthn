@@ -86,7 +86,14 @@ pub fn qq_parse_openid(
     None => ()
   }
   match m.get("openid") {
-    Some(String(s)) => s
+    // 🔴 空串视为缺失（契约 §2.2：subject 必须存在且非空——空串 uid 落进调用方
+    // 映射表可与其它空串身份碰撞；黑客审计 E2 实测）。
+    Some(String(s)) =>
+      if s.length() > 0 {
+        s
+      } else {
+        raise @core.ParseError("moonauth: qq me response has empty openid")
+      }
     _ => raise @core.ParseError("moonauth: qq me response missing openid")
   }
 }

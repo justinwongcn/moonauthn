@@ -117,10 +117,7 @@ pub impl GoogleProvider for DefaultGoogleProvider with fn complete_auth(
     Some(e) => raise e
     None => ()
   }
-  let code = match callback.get("code") {
-    Some(c) => c
-    None => raise @core.MissingParam("code")
-  }
+  let code = callback.required_non_empty("code")
   let token = self.oauth.exchange({
     token_endpoint: self.config.token_endpoint,
     client_id: self.config.client_id,

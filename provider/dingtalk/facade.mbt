@@ -97,10 +97,7 @@ pub impl DingTalkProvider for DefaultDingTalkProvider with fn complete_auth(
   if state != expected.state {
     raise @core.StateMismatch
   }
-  let code = match callback.get("code") {
-    Some(c) => c
-    None => raise @core.MissingParam("code")
-  }
+  let code = callback.required_non_empty("code")
   let access_token = dingtalk_fetch_token(self.config, code, expected.code_verifier)
   let body = dingtalk_fetch_userinfo(self.config, access_token)
   dingtalk_identity(body)

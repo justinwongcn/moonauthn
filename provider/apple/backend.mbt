@@ -96,14 +96,8 @@ pub impl AppleProvider for DefaultAppleProvider with fn complete_auth(
     Some(e) => raise e
     None => ()
   }
-  let id_token = match callback.get("id_token") {
-    Some(t) => t
-    None => raise @core.MissingParam("id_token")
-  }
-  let code = match callback.get("code") {
-    Some(c) => c
-    None => raise @core.MissingParam("code")
-  }
+  let id_token = callback.required_non_empty("id_token")
+  let code = callback.required_non_empty("code")
   // 换 token：client_secret 现签 ES256 JWT。
   let secret = apple_client_secret(self.config)
   let _token = self.oauth.exchange({

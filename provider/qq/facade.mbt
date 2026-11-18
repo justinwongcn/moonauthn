@@ -70,10 +70,7 @@ pub impl QQProvider for DefaultQQProvider with fn complete_auth(
   if state != expected.state {
     raise @core.StateMismatch
   }
-  let code = match callback.get("code") {
-    Some(c) => c
-    None => raise @core.MissingParam("code")
-  }
+  let code = callback.required_non_empty("code")
   let access_token = qq_fetch_token(self.config, code)
   let openid = qq_fetch_openid(self.config, access_token)
   let body = qq_fetch_userinfo(self.config, access_token, openid)

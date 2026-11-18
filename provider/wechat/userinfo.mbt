@@ -63,6 +63,11 @@ pub fn wechat_identity(
     _ => token_unionid
   }
   let (uid, kind) = wechat_pick_uid(unionid, openid)
+  // 🔴 最终 uid 非空兜底（契约 §2.2；黑客审计 E2）——unionid/openid 均空串时
+  // 不得产出空 uid 身份。
+  if uid.length() == 0 {
+    raise @core.ParseError("moonauth: wechat identity has empty uid")
+  }
   let nickname = match m.get("nickname") {
     Some(String(s)) => Some(s)
     _ => None

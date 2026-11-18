@@ -62,10 +62,7 @@ pub impl WeChatProvider for DefaultWeChatProvider with fn complete_auth(
   if state != expected.state {
     raise @core.StateMismatch
   }
-  let code = match callback.get("code") {
-    Some(c) => c
-    None => raise @core.MissingParam("code")
-  }
+  let code = callback.required_non_empty("code")
   let token = wechat_fetch_token(self.config, code)
   let body = wechat_fetch_userinfo(self.config, token.access_token, token.openid)
   // unionid 兜底链：userinfo.unionid → token.unionid → openid(Degraded)。
