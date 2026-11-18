@@ -25,6 +25,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   之一，否则 `AudienceMismatch`——实测（microsoft 流程）：`aud=[期望,他方]` 且
   `azp=他方` 的 token 此前**通过全部校验并归一身份**。单值 `aud` 不强制 `azp`
   （Google/Entra 单资源形态，向后兼容）。
+  **OCR 代码审查复核后强化**（alibaba open-code-review 对 775999c 的审查发现两处残余，
+  均已修复）：① `azp` 存在时改为**无条件**校验——必须同时属于 token 自身的 `aud`
+  声明值与期望受众（原实现仅对照配置集合，两集合不可互换；单值 `aud` + 外部 `azp`
+  的形态此前完全放行）；② 门控取 **raw `aud` 形态**（数组含非字符串元素一律
+  `ParseError`），不再经归一化视图（归一会静默丢弃非字符串元素，使 `["client-1",42]`
+  绕过 azp 门控）。新增 `oidc/oidc_wbtest.mbt` 白盒单测 ×7（provider 无关地钉死
+  check_azp 双条款契约）+ microsoft 集成用例 ×3（F-a 攻击回归/缺 azp/单值 aud +
+  外部 azp）。
 - **totp：验证窗口改「仅回看」，不再接受未来时间步**（黑客审计第 2 轮，JEV 确认 0.993）。
   `verify` 此前为 `±window` 对称——T=29 校验 step1 的码被接受（RFC 6238 附录 B 向量实测）。
   接受未来步把在线爆破窗口从 2 步扩大到 3 步、并接受预先生成的未来码，与实现契约

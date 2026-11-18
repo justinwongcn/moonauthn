@@ -282,23 +282,55 @@ fn check_nonce(claims : Map[String, Json], nonce : String?) -> Unit raise @core.
 }
 
 ///|
-/// 🔴 OIDC Core §3.1.3.7（实现契约 §4.2 azp；黑客审计实测确认）：`aud` 为**多值
-/// 数组**时，`azp` 必须存在且等于期望受众之一——否则「为其他受众签发」的 token
-/// （aud 数组恰好包含我们的 client_id、azp=他方应用）可通过全部校验并被复用。
-/// 单值 `aud` 不强制 `azp`（Google/Entra 单资源形态，向后兼容）。
+/// 🔴 azp 双条款校验（OIDC Core §3.1.3.7 / RFC 9068；实现契约 §4.2 azp；黑客审计
+/// F13 实测 + OCR 审查确认两处残余）：
+///
+/// 条款 (a)——多受众：`aud` 的**字符串值个数 > 1** 时，`azp` 必须存在且属于期望受众；
+/// 条款 (b)——`azp` **只要存在**（无论 aud 单/多值），其值必须**同时**属于
+/// ① token 自身的 `aud` 声明值（token 是「为谁签发」的，授权方不得指向 aud 之外的
+/// 应用——配置期望受众只是我们愿意接受的集合，两个集合不可互换）与 ② 期望受众。
+///
+/// 🔴 触发条件取 **raw `aud` 形态**而非归一化视图：`aud` 数组含非字符串元素一律
+/// `ParseError`（fail-closed）——归一化会把非字符串元素静默丢弃，使
+/// `["client-1",42]` 这类载荷绕过 azp 门控（OCR 审查确认的绕过路径）。
 fn check_azp(
   claims : Map[String, Json],
   audiences : Array[String],
 ) -> Unit raise @core.AuthError {
-  let aud_values = audience_of(claims)
-  if aud_values.length() > 1 {
-    match str_claim(claims, "azp") {
-      Some(azp) =>
-        if !audiences.contains(azp) {
-          raise @core.AudienceMismatch(azp, audiences.join(","))
+  // raw `aud` 形态：字符串 → 单值；数组 → 逐元素必须为字符串（fail-closed）。
+  let aud_values = match claims.get("aud") {
+    Some(String(s)) => [s]
+    Some(Array(items)) => {
+      let vals : Array[String] = []
+      for it in items {
+        match it {
+          String(s) => vals.push(s)
+          _ =>
+            raise @core.ParseError(
+              "moonauth: id_token aud array contains a non-string element",
+            )
         }
-      None => raise @core.AudienceMismatch("<missing azp>", audiences.join(","))
+      }
+      vals
     }
+    _ => []
+  }
+  match str_claim(claims, "azp") {
+    // 条款 (b)：azp 存在 → 必须同时 ∈ token 自身 aud 声明 与 期望受众。
+    Some(azp) => {
+      if !aud_values.contains(azp) {
+        raise @core.AudienceMismatch(azp, audiences.join(","))
+      }
+      if !audiences.contains(azp) {
+        raise @core.AudienceMismatch(azp, audiences.join(","))
+      }
+    }
+    // 条款 (a)：azp 缺失 → 仅当 aud 为多值（>1）时拒绝；单值 aud 不强制 azp
+    // （Google/Entra 单资源形态，向后兼容）。
+    None =>
+      if aud_values.length() > 1 {
+        raise @core.AudienceMismatch("<missing azp>", audiences.join(","))
+      }
   }
 }
 
