@@ -203,13 +203,20 @@ async fn run() -> Unit raise @core.AuthError {
       let callback = @core.CallbackParams::from_query_string(query)
       @google.complete_auth(config, callback, start)
     } else if platform == "microsoft" {
+      // client_secret 留空 = 公开客户端（PKCE-only，不发 secret——零注册冒烟用
+      // Azure CLI 一方公开客户端 client_id 即属此形态）。
       let config = @microsoft.MicrosoftConfig::new(
           jstr(section, "client_id"),
           jstr(section, "redirect_uri"),
         )
-        .with_client_secret(jstr(section, "client_secret"))
         .with_tenant(jstr(section, "tenant"))
         .with_allowed_tenant_ids(jstr_array(section, "allowed_tenant_ids"))
+      let secret = jstr(section, "client_secret")
+      let config = if secret.length() > 0 {
+        config.with_client_secret(secret)
+      } else {
+        config
+      }
       let start = @microsoft.begin_auth(config, secrets)
       println("== 授权 URL（浏览器打开并登录）==")
       println(start.url)

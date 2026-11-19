@@ -86,3 +86,38 @@ let identity = @microsoft.complete_auth(config, callback, start)
 - 归一化：`provider/microsoft/claims.mbt`
 - trait（整体替换点）：`provider/microsoft/provider_seam.mbt`
 - facade：`provider/microsoft/facade.mbt`
+
+## 6. L2 实测（2026-11-20，零注册公开客户端）
+
+用 **Azure CLI 一方公开客户端** client_id（`04b07795-…`，微软官方发布、多租户
+public client）走 l2 harness 全链路：浏览器授权 → 回调自动捕获 → 公开客户端
+PKCE-only（无 secret）换 token → 真实 Entra JWKS RS256 验签 → 归一身份。全链路一次通过：
+
+- **消费者租户（MSA）实测**：登录个人账号，tid = `9188040d-6c67-4c5b-b112-36a304b66dad`
+  （微软消费者租户），per-tenant issuer `https://login.microsoftonline.com/9188040d-…/v2.0`
+  派生 + 验签通过——`common` 入口 → per-tenant 精确 issuer 的核心设计在真实 MSA 上成立；
+- **`uid_kind = Stable`**（`sub`）；`aud` = client_id 本身；
+- 🔴 **MSA 的 `email` 无 `email_verified` 声明 → 库如实归一 `verified=false`**
+  （fail-closed 口径：组织租户 IdP 才保证邮箱已验证；消费侧调用方不得把 `verified=false`
+  当作未提供邮箱）；
+- `nonce` / `state` 回程校验、`name` / `preferred_username` / `oid` / `idtyp` 等
+  extra 声明字符串化入 `raw` 均符合预期（完整记录在 `l2/records/`，不入库）。
+
+零注册冒烟配置（仅验库，生产请用你自己的应用注册 + 显式 tenant-id）：
+
+```json
+{
+  "platform": "microsoft",
+  "callback_port": 9876,
+  "timeout_seconds": 900,
+  "microsoft": {
+    "client_id": "04b07795-8ddb-461a-bbee-02f9e1bf7b46",
+    "redirect_uri": "http://localhost:9876",
+    "tenant": "common"
+  }
+}
+```
+
+要点：redirect 用**无路径** `http://localhost:9876`（Azure CLI 注册的是无路径
+`http://localhost`；loopback 匹配端口可变但路径必须一致，见 Entra redirect URI 规则）；
+`client_secret` 留空 = 公开客户端（PKCE-only，不发 secret）。
