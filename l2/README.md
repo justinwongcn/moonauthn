@@ -57,9 +57,52 @@ Azure CLI 的 client_id（`04b07795-8ddb-461a-bbee-02f9e1bf7b46`）是微软一�
 
 ## 注意
 
-- `l2/config.json` / `l2/callback.txt` / `l2/records/` 已 gitignore——凭据绝不入库；
+- `l2/config.json` / `l2/callback.txt` / `l2/records/` / `l2/*.pem` 已 gitignore——凭据绝不入库；
+- **运行前确认无残留 `l2.exe` 进程**（多实例并存时回调捕获互相竞争，曾导致
+  捕获内容缺 query → state 缺失误报）；
 - harness 退出后**删除 `l2/callback.txt` 残留**（旧 state 会立即被下一轮 paste
   模式捕获，导致 state mismatch）；
-- 微信测试号的授权需在**微信内**打开授权 URL（PC 浏览器显示二维码，扫码亦可）；
-- alipay 用**沙箱版钱包**或浏览器打开沙箱授权页；
+- `moon run` 输出重定向到文件是**块缓冲**，授权 URL 拿不到——用
+  `script -q l2/harness.log moon run l2 --target native`（pty 行缓冲）；
 - 记录格式 = 本 harness 打印的「L2 记录」块，逐平台粘贴进验收清单。
+
+## 被墙平台的本地转发层（forwarder.py）
+
+MoonBit HTTP 客户端不支持代理环境变量；被墙平台（google/discord/x）的
+token/userinfo 端点可经本地转发层走 HTTP 代理：
+
+```bash
+python3 l2/forwarder.py \
+  --listen 127.0.0.1:9877 \
+  --proxy  http://127.0.0.1:7890 \
+  --map /api=https://discord.com/api \
+  --map /x2=https://api.twitter.com/2
+```
+
+然后在 config.json 平台节里给 token/userinfo 指向 `http://127.0.0.1:9877/...`
+（google 加 `jwks_uri`，`issuer` 固定官方值——验签 issuer 与传输通道无关）。
+授权端点保持官方 URL（浏览器侧自行可达）。2026-11-20 discord 已用此形态实测通过。
+
+## 手机端授权回调形态（wechat）
+
+公众号网页授权只能在微信客户端内打开，手机授权后回跳 `redirect_uri`——
+回跳目标是**手机的 127.0.0.1**。解法：回调域与 redirect_uri 用**桌面局域网 IP**，
+config 顶层 `"callback_host": "0.0.0.0"` 让 harness 监听全部接口接收手机回跳
+（手机与桌面须同一 Wi-Fi）。另有测试号前置：**用户须先关注测试号**，否则授权页
+报登录失败；后台「授权回调页面域名」保存后微信侧有传播延迟。
+
+## 2026-11-20 真实回流结果
+
+| 平台 | 结果 | 要点 |
+|---|---|---|
+| microsoft | ✅ | 零注册（Azure CLI 公开客户端），消费者租户 issuer 验签，MSA `email_verified=false` 归一 |
+| github | ✅ | `uid=124032292` Stable；`/user` email=null → **邮箱回退**（/user/emails）实测生效 `verified=true`；PKCE 被接受 |
+| discord | ✅ | `uid=913455297832579086` Stable；forwarder 转发链路全通（chunked 请求体 + 强制 identity 编码两个坑已修） |
+| feishu | ✅ | `uid=union_id` Stable；未开邮箱权限 → `email=<none>`（**文档化降级行为**实测成立）；免审权限 + 个人版自发布 |
+| alipay | ⏸ | 沙箱配置全部完成（appid/网关/自定义公钥/本地私钥），卡在沙箱登录页验证码图/二维码间歇性加载失败 |
+| wechat | ⏸ | 测试号 appID/secret/回调域（LAN IP）就绪，卡在「域名与后台配置不一致」（配置已核实正确，疑微信侧传播延迟） |
+| google | ⏸ | OAuth 客户端已建（凭据已存 config.json），新客户端配置生效需 5 分钟~数小时，当时未生效 |
+| x | ⏸ | 登录页白屏（被墙 CDN 经代理加载失败），需稳定代理环境 |
+| dingtalk | ⏸ | Owner 决定跳过（当前组织无开发者权限，测试组织创建流程未走完） |
+
+已到手的 4 条记录在 `l2/records/`（gitignored）。

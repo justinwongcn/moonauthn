@@ -10,3 +10,4 @@ l2/records/
 # macOS
 .DS_Store
 l2/harness.log
+l2/*.pem

@@ -68,10 +68,12 @@ fn jint(o : Map[String, Json], key : String, default : Int) -> Int {
 /// 并回显友好页面。`capture` 以引用共享，主流程轮询读取。
 async fn start_callback_server(
   group : @async.TaskGroup[Unit],
+  host : String,
   port : Int,
   capture : L2Capture,
 ) -> Unit {
-  let server = @http.Server(@socket.Addr::parse("127.0.0.1:\{port}"))
+  // host 默认 127.0.0.1；手机端授权回调（wechat 场景）需 0.0.0.0 接收局域网回跳。
+  let server = @http.Server(@socket.Addr::parse("\{host}:\{port}"))
   group.add_defer(() => server.close())
   group.spawn_bg(no_wait=true) <| () => {
     server.run_forever() <| ((req, _body, conn) => {
@@ -99,6 +101,7 @@ async fn wait_capture(capture : L2Capture, timeout_s : Int) -> String raise @cor
   while waited < timeout_s {
     if capture.path.length() > 0 {
       println("已捕获浏览器回调（等待 \{waited}s）")
+      println("捕获内容: \{capture.path}")
       return capture.path
     }
     let paste = @async_fs.read_file(callback_path).text() catch {
@@ -106,6 +109,7 @@ async fn wait_capture(capture : L2Capture, timeout_s : Int) -> String raise @cor
     }
     if paste.length() > 0 {
       println("已捕获粘贴的回调 URL（等待 \{waited}s）")
+      println("捕获内容: \{paste}")
       return paste
     }
     @async.sleep(1000)
@@ -180,10 +184,14 @@ async fn run() -> Unit raise @core.AuthError {
   let timeout_s = jint(cfg, "timeout_seconds", 600)
   let section = jobj(cfg, platform)
   let callback_port = jint(cfg, "callback_port", 9876)
+  let mut callback_host = jstr(cfg, "callback_host")
+  if callback_host.length() == 0 {
+    callback_host = "127.0.0.1"
+  }
   let capture = L2Capture::{ path: "", paste: "" }
   try {
     @async.with_task_group() <| group => {
-      start_callback_server(group, callback_port, capture)
+      start_callback_server(group, callback_host, callback_port, capture)
       try {
       let secrets : @core.SuppliedSecrets = {
         state: None,
@@ -196,6 +204,19 @@ async fn run() -> Unit raise @core.AuthError {
           jstr(section, "redirect_uri"),
         )
         .with_client_secret(jstr(section, "client_secret"))
+      // 端点覆盖（本地转发层形态：token/jwks 可指向本地 forwarder，
+      // issuer 固定官方值——验签 issuer 与传输通道无关）。
+      let auth_ep = jstr(section, "authorization_endpoint")
+      let config = if auth_ep.length() > 0 {
+        config.with_endpoints(
+          auth_ep,
+          jstr(section, "token_endpoint"),
+          jstr(section, "jwks_uri"),
+          jstr(section, "issuer"),
+        )
+      } else {
+        config
+      }
       let start = @google.begin_auth(config, secrets)
       println("== 授权 URL（浏览器打开并登录）==")
       println(start.url)
@@ -238,6 +259,17 @@ async fn run() -> Unit raise @core.AuthError {
           jstr(section, "redirect_uri"),
         )
         .with_client_secret(jstr(section, "client_secret"))
+      // 端点覆盖（本地转发层形态：config 提供 authorization_endpoint 即启用）。
+      let auth_ep = jstr(section, "authorization_endpoint")
+      let config = if auth_ep.length() > 0 {
+        config.with_endpoints(
+          auth_ep,
+          jstr(section, "token_endpoint"),
+          jstr(section, "user_info_endpoint"),
+        )
+      } else {
+        config
+      }
       let start = @discord.begin_auth(config, secrets)
       println("== 授权 URL（浏览器打开并登录）==")
       println(start.url)
@@ -246,6 +278,17 @@ async fn run() -> Unit raise @core.AuthError {
       @discord.complete_auth(config, callback, start)
     } else if platform == "x" {
       let config = @x.XConfig::new(jstr(section, "client_id"), jstr(section, "redirect_uri"))
+      // 端点覆盖（本地转发层形态）。
+      let auth_ep = jstr(section, "authorization_endpoint")
+      let config = if auth_ep.length() > 0 {
+        config.with_endpoints(
+          auth_ep,
+          jstr(section, "token_endpoint"),
+          jstr(section, "userinfo_endpoint"),
+        )
+      } else {
+        config
+      }
       let start = @x.begin_auth(config, secrets)
       println("== 授权 URL（浏览器打开并登录）==")
       println(start.url)
