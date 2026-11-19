@@ -91,7 +91,14 @@ config 顶层 `"callback_host": "0.0.0.0"` 让 harness 监听全部接口接收�
 （手机与桌面须同一 Wi-Fi）。另有测试号前置：**用户须先关注测试号**，否则授权页
 报登录失败；后台「授权回调页面域名」保存后微信侧有传播延迟。
 
-## 2026-11-20 真实回流结果
+## 2026-11-20 真实回流结果（google 补记：同日稍晚重试成功）
+
+google 客户端配置生效后重试一次通过——浏览器走系统代理，harness 的 token/jwks
+走 forwarder（`--map /token=https://oauth2.googleapis.com/token --map
+/jwks=https://www.googleapis.com/oauth2/v3/certs`），`issuer` 固定官方值。
+真实 Google token 上 azp/aud 校验、nonce 回程、RS256 JWKS 验签全部成立。
+
+
 
 | 平台 | 结果 | 要点 |
 |---|---|---|
@@ -99,6 +106,7 @@ config 顶层 `"callback_host": "0.0.0.0"` 让 harness 监听全部接口接收�
 | github | ✅ | `uid=124032292` Stable；`/user` email=null → **邮箱回退**（/user/emails）实测生效 `verified=true`；PKCE 被接受 |
 | discord | ✅ | `uid=913455297832579086` Stable；forwarder 转发链路全通（chunked 请求体 + 强制 identity 编码两个坑已修） |
 | feishu | ✅ | `uid=union_id` Stable；未开邮箱权限 → `email=<none>`（**文档化降级行为**实测成立）；免审权限 + 个人版自发布 |
+| google | ✅ | `uid=sub` Stable，`email verified=true`；真实 Google JWKS RS256 验签（token/jwks 经 forwarder）；**azp=aud=client_id 双条款校验**在真实 token 上执行 |
 | alipay | ⏸ | 沙箱配置全部完成（appid/网关/自定义公钥/本地私钥），卡在沙箱登录页验证码图/二维码间歇性加载失败 |
 | wechat | ⏸ | 测试号 appID/secret/回调域（LAN IP）就绪，卡在「域名与后台配置不一致」（配置已核实正确，疑微信侧传播延迟） |
 | google | ⏸ | OAuth 客户端已建（凭据已存 config.json），新客户端配置生效需 5 分钟~数小时，当时未生效 |
