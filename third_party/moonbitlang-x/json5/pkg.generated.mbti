@@ -1,0 +1,54 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitlang/x/json5"
+
+import {
+  "moonbitlang/core/debug",
+  "moonbitlang/core/json",
+}
+
+// Values
+pub fn parse(String) -> @json.Json raise ParseError
+
+// Errors
+pub(all) suberror ParseError {
+  ParseError(ParseErrorData)
+}
+#deprecated
+pub fn ParseError::output(Self, &Logger) -> Unit
+#deprecated
+pub fn ParseError::to_repr(Self) -> @debug.Repr
+pub fn ParseError::to_string(Self) -> String
+pub impl Show for ParseError
+pub impl @debug.Debug for ParseError
+
+// Types and methods
+#derive(Eq, @debug.Debug)
+pub(all) enum ParseErrorData {
+  NoValidToken(Position)
+  InvalidChar(Position, Char)
+  InvalidEof
+  InvalidNumber(Position, String)
+  InvalidIdentEscape(Position)
+}
+#deprecated
+pub fn ParseErrorData::equal(Self, Self) -> Bool
+#deprecated
+pub fn ParseErrorData::not_equal(Self, Self) -> Bool
+#deprecated
+pub fn ParseErrorData::to_repr(Self) -> @debug.Repr
+
+#derive(Eq, @debug.Debug)
+pub(all) struct Position {
+  line : Int32
+  column : Int32
+}
+#deprecated
+pub fn Position::equal(Self, Self) -> Bool
+#deprecated
+pub fn Position::not_equal(Self, Self) -> Bool
+#deprecated
+pub fn Position::to_repr(Self) -> @debug.Repr
+
+// Type aliases
+
+// Traits

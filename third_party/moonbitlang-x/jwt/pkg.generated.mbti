@@ -1,0 +1,31 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitlang/x/jwt"
+
+import {
+  "moonbitlang/core/debug",
+  "moonbitlang/core/json",
+}
+
+// Values
+pub fn[T : @json.FromJson] decode(String, key~ : Bytes, algorithm~ : HmacAlgorithm, leeway? : Int32, require_exp? : Bool, issuer? : String, audience? : String) -> T raise JwtError
+
+pub fn[T : @json.ToJson] encode(T, key~ : Bytes, algorithm~ : HmacAlgorithm) -> String raise JwtError
+
+// Errors
+#derive(@debug.Debug)
+pub suberror JwtError {
+  InvalidArgument(String)
+  InvalidToken(String)
+  Expired
+  NotYetValid(not_before~ : Double)
+}
+
+// Types and methods
+#derive(Eq, @debug.Debug)
+pub(all) enum HmacAlgorithm {
+  HS256
+}
+
+// Type aliases
+
+// Traits

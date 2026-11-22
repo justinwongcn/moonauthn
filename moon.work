@@ -1,8 +1,8 @@
 members = [
   ".",
+  "third_party/moonbitlang-x",
   "examples/minimal-google",
   "examples/bare-async",
   "examples/moonback",
-  "examples/mars",
   "examples/switch-sdk",
 ]
