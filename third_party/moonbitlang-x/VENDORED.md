@@ -4,7 +4,7 @@ Source: https://github.com/moonbitlang/x (published on mooncakes.io as moonbitla
 License: Apache License 2.0 (OSI-approved), copyright MoonBit lang / moonbitlang contributors.
 
 Vendored for local workspace resolution: the registry manifest of the version pinned
-by mizchi/experimental_crypto@0.0.2 (moonbitlang/x@0.4.43) uses the legacy
+by justinwongcn/experimental_crypto@0.0.3 (moonbitlang/x@0.4.43) uses the legacy
 `moon.mod.json` format, which newer MoonBit toolchains refuse to install. The vendored
 copy is migrated to the current `moon.mod` format and registered as a `moon.work`
 workspace member, so the module name `moonbitlang/x` resolves locally.

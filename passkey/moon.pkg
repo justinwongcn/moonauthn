@@ -2,15 +2,15 @@ import {
   "justinwongcn/moonauthn/core" @core,
   "justinwongcn/moonauthn/rand" @rand,
   "justinwongcn/moonauthn/store-memory" @store_memory,
-  "mizchi/experimental_crypto/webauthn" @webauthn,
-  "mizchi/experimental_crypto/cbor" @cbor,
+  "justinwongcn/experimental_crypto/webauthn" @webauthn,
+  "justinwongcn/experimental_crypto/cbor" @cbor,
   "moonbitlang/core/json" @json,
   "moonbitlang/core/encoding/utf8",
 }
 
 import {
   "justinwongcn/moonauthn/contract" @contract,
-  "mizchi/experimental_crypto/p256" @p256,
+  "justinwongcn/experimental_crypto/p256" @p256,
   "moonbitlang/core/debug",
   "moonbitlang/async",
 } for "test"

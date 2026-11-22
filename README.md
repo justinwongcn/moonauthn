@@ -51,10 +51,10 @@
 | `wasm-gc` | ❌ | **明确不支持**，原因见下 |
 
 🔴 **为什么 `wasm-gc` 不支持**：库的 CSPRNG（passkey challenge / OAuth `state` 随机数）来自
-`mizchi/experimental_crypto/getrandom`，而它只声明支持 `[js, native]`——
+`justinwongcn/experimental_crypto/getrandom`，而它只声明支持 `[js, native]`——
 
 ```
-wasm-gc  ❌ 'mizchi/experimental_crypto/getrandom' supports [js, native]
+wasm-gc  ❌ 'justinwongcn/experimental_crypto/getrandom' supports [js, native]
 ```
 
 随机数是 passkey challenge 与 OAuth state 的**安全必需件，不可绕过**，故 `wasm-gc` 不在支持范围内。

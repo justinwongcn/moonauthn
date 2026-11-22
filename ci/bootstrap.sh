@@ -5,7 +5,7 @@
 #
 # 🔴 背景（2026-11-17）：
 #   - moon 0.1.20261104（当前官方 latest）移除了 `try?` 语法（诊断 [3002]），并在
-#     `.mbti` 把默认 `Int` 渲染为 `Int32`。第三方依赖 `mizchi/experimental_crypto@0.0.2`
+#     `.mbti` 把默认 `Int` 渲染为 `Int32`。第三方依赖 `justinwongcn/experimental_crypto@0.0.3`
 #     （registry 最新且唯一版本，无升级路径）仍使用 `try?`，其 `webauthn` 包在 moonauth
 #     的编译闭包内（passkey / qa_verify 依赖）。
 #   - `moonbitlang/regexp@0.3.5`（`mizchi/x@0.6.1` 的依赖，经 examples/mars 进入工作区

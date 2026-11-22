@@ -1,6 +1,6 @@
 //! moonauth / rand —— 默认 `RandomSource` 实现：`GetrandomSource`。
 //!
-//! 🔴 **本包是全库唯一引用 `mizchi/experimental_crypto/getrandom` 的地方。**
+//! 🔴 **本包是全库唯一引用 `justinwongcn/experimental_crypto/getrandom` 的地方。**
 //! 除本包外任何子包都不得 import getrandom；需要随机源的地方一律经 `core.RandomSource`
 //! seam 注入。这样「不依赖 CSPRNG 的纯验签子集」（除本包外全部子包）可在无 getrandom
 //! 的 target（如 wasm-gc）上编译，且调用方可用自定义 `RandomSource` 完全绕开。

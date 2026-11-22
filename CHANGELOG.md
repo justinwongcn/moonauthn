@@ -156,7 +156,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   qa_verify / README 同步；`provider_ids()` 计数断言更新为 11。
 - **CI：依赖兼容引导层 `ci/bootstrap.sh` + `ci/migrate_try.py`**（check.sh 第 0 步，幂等）。
   moon 0.1.20261104（官方 latest）移除 `try?` 语法并更改 manifest 格式要求，而
-  `mizchi/experimental_crypto@0.0.2`（最新且唯一版本）与 `moonbitlang/regexp@0.3.5` 均未跟进
+  `justinwongcn/experimental_crypto@0.0.3`（最新且唯一版本）与 `moonbitlang/regexp@0.3.5` 均未跟进
   ——本层对 `.mooncakes` 缓存做确定性迁移：旧格式 manifest → `moon.mod`（官方 `moon fmt` 路径）、
   `try? EXPR` → `try Ok(EXPR) catch { e => Err(e) }`（官方诊断 [3002] 给出的语义保持替换，词边界
   检测 + 注释跳过 + 跨行括号配对）。全新缓存多轮自愈，**从零复现已验证**（删除 `.mooncakes` /
