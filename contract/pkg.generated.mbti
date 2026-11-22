@@ -1,9 +1,9 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "justinwongcn/moonauth/contract"
+package "justinwongcn/moonauthn/contract"
 
 import {
-  "justinwongcn/moonauth/core",
-  "justinwongcn/moonauth/provider/google",
+  "justinwongcn/moonauthn/core",
+  "justinwongcn/moonauthn/provider/google",
 }
 
 // Values

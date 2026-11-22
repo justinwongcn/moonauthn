@@ -1,8 +1,8 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "justinwongcn/moonauth/store-memory"
+package "justinwongcn/moonauthn/store-memory"
 
 import {
-  "justinwongcn/moonauth/core",
+  "justinwongcn/moonauthn/core",
 }
 
 // Values

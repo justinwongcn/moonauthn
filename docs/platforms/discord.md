@@ -1,6 +1,6 @@
 # Discord 接入
 
-> 子包：`justinwongcn/moonauth/provider/discord`
+> 子包：`justinwongcn/moonauthn/provider/discord`
 > 协议：Discord OAuth2 授权码流程（**支持 PKCE，仅 S256**）；无 `id_token`，身份经 REST API。
 
 ## 1. 申请步骤

@@ -1,6 +1,6 @@
 # Microsoft Entra ID 接入
 
-> 子包：`justinwongcn/moonauth/provider/microsoft`
+> 子包：`justinwongcn/moonauthn/provider/microsoft`
 > 协议：Microsoft identity platform **v2.0** + OIDC，`id_token` 为 RS256；PKCE S256 恒启用。
 > 依据：调研文档 `docs/providers/microsoft.md`（2026-11-13 官方接口已核验）。
 

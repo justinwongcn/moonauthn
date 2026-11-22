@@ -1,10 +1,10 @@
 import {
-  "justinwongcn/moonauth/core" @core,
-  "justinwongcn/moonauth/contract" @contract,
-  "justinwongcn/moonauth/provider/google" @google,
-  "justinwongcn/moonauth/passkey" @passkey,
-  "justinwongcn/moonauth/totp" @totp,
-  "justinwongcn/moonauth/store-memory" @store_memory,
+  "justinwongcn/moonauthn/core" @core,
+  "justinwongcn/moonauthn/contract" @contract,
+  "justinwongcn/moonauthn/provider/google" @google,
+  "justinwongcn/moonauthn/passkey" @passkey,
+  "justinwongcn/moonauthn/totp" @totp,
+  "justinwongcn/moonauthn/store-memory" @store_memory,
   "moonbitlang/async",
 }
 

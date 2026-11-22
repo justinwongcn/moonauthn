@@ -1,8 +1,8 @@
 import {
   "moonbitlang/core/debug",
-  "justinwongcn/moonauth/core" @core,
-  "justinwongcn/moonauth/provider/google" @google,
-  "justinwongcn/moonauth/contract" @contract,
+  "justinwongcn/moonauthn/core" @core,
+  "justinwongcn/moonauthn/provider/google" @google,
+  "justinwongcn/moonauthn/contract" @contract,
   "moonbitlang/async",
   "moonbitlang/async/http",
   "moonbitlang/async/socket",

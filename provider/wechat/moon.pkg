@@ -1,12 +1,12 @@
 import {
-  "justinwongcn/moonauth/core" @core,
-  "justinwongcn/moonauth/rand" @rand,
+  "justinwongcn/moonauthn/core" @core,
+  "justinwongcn/moonauthn/rand" @rand,
   "moonbitlang/core/encoding/utf8" @utf8,
   "moonbitlang/core/json" @json,
 }
 
 import {
-  "justinwongcn/moonauth/contract" @contract,
+  "justinwongcn/moonauthn/contract" @contract,
   "moonbitlang/core/debug",
   "moonbitlang/async",
 } for "test"

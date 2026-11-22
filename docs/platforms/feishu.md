@@ -1,6 +1,6 @@
 # 飞书接入（含国际版 Lark）
 
-> 子包：`justinwongcn/moonauth/provider/feishu`
+> 子包：`justinwongcn/moonauthn/provider/feishu`
 > 协议：飞书 / Lark 新版 OAuth 2.0（`/authen/v2/oauth/token`）；token 端点要求 **JSON 请求体**（snake_case 字段）；token 与 userinfo 响应均套 `{code,msg,data}` 信封壳。
 
 ## 1. 申请步骤

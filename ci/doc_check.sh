@@ -7,7 +7,7 @@
 #
 #   1) 文档里出现的**文件路径**（`.mbt` / `.md` / `moon.mod` …）必须真实存在——
 #      权威来源是 `ls`/`find`，绝不接受「由签名反推的文件名」；
-#   2) 文档里出现的**库内包路径**（`justinwongcn/moonauth/...`）必须对应真实目录；
+#   2) 文档里出现的**库内包路径**（`justinwongcn/moonauthn/...`）必须对应真实目录；
 #   3) 文档里出现的**库内标识符**必须能在 `.mbti`（权威来源）里找到：
 #        - `@pkg.Ident`：当 `pkg` 判定为本库包别名时，`Ident` 必须已知；
 #        - `@pkg.Ident`：当 `pkg` **不是**本库包、而 `Ident` 是本库已知标识符时，
@@ -134,15 +134,15 @@ while IFS= read -r f; do
     # (2) 库内包路径
     while IFS= read -r m; do
       [[ -z "${m}" ]] && continue
-      rel="${m#justinwongcn/moonauth}"
+      rel="${m#justinwongcn/moonauthn}"
       d="${rel#/}"
       if [[ -z "${d}" ]]; then
-        # 裸模块名或 `justinwongcn/moonauth/`（泛指）：以库根 moon.mod 为实物
+        # 裸模块名或 `justinwongcn/moonauthn/`（泛指）：以库根 moon.mod 为实物
         [[ -f moon.mod ]] || report "${where}: 库根不存在 moon.mod（引用: ${m}）"
       else
         [[ -d "${d}" ]] || report "${where}: 库内包路径不存在: ${m}"
       fi
-    done < <(grep -oE 'justinwongcn/moonauth[a-zA-Z0-9/_-]*' <<<"${clean}" || true)
+    done < <(grep -oE 'justinwongcn/moonauthn[a-zA-Z0-9/_-]*' <<<"${clean}" || true)
 
     # (3a) Type::name —— Type 判定为本库类型时，name 必须已知
     while IFS= read -r m; do

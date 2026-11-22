@@ -1,6 +1,6 @@
 //! moonauth / example —— 最小 Google 登录示例（**独立模块**）。
 //!
-//! 🔴 **LIB-20 隔离演示**：本模块**只** `import justinwongcn/moonauth/provider/google`，
+//! 🔴 **LIB-20 隔离演示**：本模块**只** `import justinwongcn/moonauthn/provider/google`，
 //! 其依赖图里**不含**其余任何 provider（apple / wechat / qq / alipay / x / github / discord / dingtalk / feishu），也不含
 //! `passkey` / `totp`。若 `provider/*` 之间存在耦合，本示例将无法独立编译。
 //!

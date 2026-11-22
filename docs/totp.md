@@ -1,6 +1,6 @@
 # TOTP（2FA）接入
 
-> 子包：`justinwongcn/moonauth/totp`
+> 子包：`justinwongcn/moonauthn/totp`
 > 协议：RFC 6238（TOTP）/ RFC 4226（HOTP 基元），默认实现 `StandardTotpPrimitive`；高层门面 `TotpService`。
 
 ## 1. 定位

@@ -1,7 +1,7 @@
 import {
-  "justinwongcn/moonauth/core" @core,
-  "justinwongcn/moonauth/contract" @contract,
-  "justinwongcn/moonauth/provider/google" @google,
+  "justinwongcn/moonauthn/core" @core,
+  "justinwongcn/moonauthn/contract" @contract,
+  "justinwongcn/moonauthn/provider/google" @google,
   "moonbitlang/moonback" @moonback,
   "moonbitlang/async",
   "moonbitlang/async/http" @http,

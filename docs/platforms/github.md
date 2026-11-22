@@ -1,6 +1,6 @@
 # GitHub 接入
 
-> 子包：`justinwongcn/moonauth/provider/github`
+> 子包：`justinwongcn/moonauthn/provider/github`
 > 协议：GitHub OAuth App / GitHub App 授权码流程（**支持 PKCE**，2025-07 起）；无 `id_token`，身份经 REST API。
 
 ## 1. 申请步骤

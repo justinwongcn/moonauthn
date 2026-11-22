@@ -1,4 +1,4 @@
-name = "justinwongcn/moonauth"
+name = "justinwongcn/moonauthn"
 version = "0.1.0"
 
 supported_targets = [ "native", "js" ]

@@ -1,5 +1,5 @@
 import {
-  "justinwongcn/moonauth/core" @core,
+  "justinwongcn/moonauthn/core" @core,
 }
 
 import {
@@ -8,7 +8,7 @@ import {
 } for "wbtest"
 
 import {
-  "justinwongcn/moonauth/store-memory" @store_memory,
-  "justinwongcn/moonauth/contract" @contract,
+  "justinwongcn/moonauthn/store-memory" @store_memory,
+  "justinwongcn/moonauthn/contract" @contract,
   "moonbitlang/async",
 } for "test"

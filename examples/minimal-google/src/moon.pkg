@@ -1,5 +1,5 @@
 import {
-  "justinwongcn/moonauth/provider/google" @google,
+  "justinwongcn/moonauthn/provider/google" @google,
 }
 
 pkgtype(kind: "executable")

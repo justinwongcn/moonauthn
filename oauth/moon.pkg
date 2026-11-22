@@ -1,5 +1,5 @@
 import {
-  "justinwongcn/moonauth/core" @core,
+  "justinwongcn/moonauthn/core" @core,
   "moonbitstack/mooncrypt/sign/ecdsa" @ecdsa,
   "moonbitstack/mooncrypt/rsa" @rsa,
   "1726914517-spec/moon_otp" @otp,
@@ -8,7 +8,7 @@ import {
 }
 
 import {
-  "justinwongcn/moonauth/contract" @contract,
+  "justinwongcn/moonauthn/contract" @contract,
   "moonbitlang/core/debug",
   "moonbitlang/async",
 } for "test"

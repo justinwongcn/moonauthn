@@ -1,6 +1,6 @@
 # Passkey（WebAuthn）接入
 
-> 子包：`justinwongcn/moonauth/passkey`
+> 子包：`justinwongcn/moonauthn/passkey`
 > 协议：W3C WebAuthn Level 2 的**服务端**校验（注册 attestation / 登录 assertion），默认实现
 > `StandardWebAuthnVerifier`；高层门面 `PasskeyService`。
 

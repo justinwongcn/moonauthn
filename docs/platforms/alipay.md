@@ -1,6 +1,6 @@
 # 支付宝（Alipay）接入
 
-> 子包：`justinwongcn/moonauth/provider/alipay`
+> 子包：`justinwongcn/moonauthn/provider/alipay`
 > 协议：**非标准 OAuth 2.0**。走网关 `POST openapi.alipay.com/gateway.do`，RSA2 签名。
 
 ## 1. 申请步骤

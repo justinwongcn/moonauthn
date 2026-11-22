@@ -1,6 +1,6 @@
 import {
-  "justinwongcn/moonauth/core" @core,
-  "justinwongcn/moonauth/contract" @contract,
+  "justinwongcn/moonauthn/core" @core,
+  "justinwongcn/moonauthn/contract" @contract,
   "moonbitlang/async",
   "moonbitlang/core/env",
 }

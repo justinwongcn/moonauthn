@@ -1,6 +1,6 @@
 # Google 接入
 
-> 子包：`justinwongcn/moonauth/provider/google`
+> 子包：`justinwongcn/moonauthn/provider/google`
 > 协议：**OIDC + OAuth 2.0 授权码 + PKCE**，`id_token` 为 RS256 / JWKS。
 
 ## 1. 申请步骤

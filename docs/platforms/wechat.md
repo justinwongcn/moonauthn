@@ -1,6 +1,6 @@
 # 微信（WeChat）接入
 
-> 子包：`justinwongcn/moonauth/provider/wechat`
+> 子包：`justinwongcn/moonauthn/provider/wechat`
 > 协议：微信开放平台 / 公众号网页授权（`snsapi_login` / `snsapi_userinfo`）+ **小程序登录**（`code2Session`）。
 
 ## 1. 申请步骤

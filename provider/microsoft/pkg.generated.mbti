@@ -1,8 +1,8 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "justinwongcn/moonauth/provider/microsoft"
+package "justinwongcn/moonauthn/provider/microsoft"
 
 import {
-  "justinwongcn/moonauth/core",
+  "justinwongcn/moonauthn/core",
 }
 
 // Values

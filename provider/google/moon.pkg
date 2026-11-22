@@ -1,12 +1,12 @@
 import {
-  "justinwongcn/moonauth/core" @core,
-  "justinwongcn/moonauth/oauth" @oauth,
-  "justinwongcn/moonauth/oidc" @oidc,
-  "justinwongcn/moonauth/rand" @rand,
+  "justinwongcn/moonauthn/core" @core,
+  "justinwongcn/moonauthn/oauth" @oauth,
+  "justinwongcn/moonauthn/oidc" @oidc,
+  "justinwongcn/moonauthn/rand" @rand,
 }
 
 import {
-  "justinwongcn/moonauth/contract" @contract,
+  "justinwongcn/moonauthn/contract" @contract,
   "moonbitlang/core/debug",
   "moonbitlang/async",
 } for "test"

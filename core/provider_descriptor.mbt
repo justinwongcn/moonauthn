@@ -5,7 +5,7 @@
 
 ///|
 /// 库内平台文档的 URL 前缀。
-const DOC_URL_PREFIX : String = "https://github.com/justinwongcn/moonauth/blob/main/docs/platforms/"
+const DOC_URL_PREFIX : String = "https://github.com/justinwongcn/moonauthn/blob/main/docs/platforms/"
 
 ///|
 /// 返回十个平台的描述表（顺序稳定：google, apple, wechat, qq, alipay, x, github, discord, dingtalk, feishu）。

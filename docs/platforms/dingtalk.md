@@ -1,6 +1,6 @@
 # 钉钉接入
 
-> 子包：`justinwongcn/moonauth/provider/dingtalk`
+> 子包：`justinwongcn/moonauthn/provider/dingtalk`
 > 协议：钉钉 v2 OAuth2（扫码 / 网页授权）；token 端点要求 **JSON 请求体**（驼峰字段）；用户信息走 **自定义鉴权头**。
 
 ## 1. 申请步骤

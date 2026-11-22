@@ -1,8 +1,8 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "justinwongcn/moonauth/provider/qq"
+package "justinwongcn/moonauthn/provider/qq"
 
 import {
-  "justinwongcn/moonauth/core",
+  "justinwongcn/moonauthn/core",
 }
 
 // Values

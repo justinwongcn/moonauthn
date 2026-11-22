@@ -1,8 +1,8 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "justinwongcn/moonauth/provider/wechat"
+package "justinwongcn/moonauthn/provider/wechat"
 
 import {
-  "justinwongcn/moonauth/core",
+  "justinwongcn/moonauthn/core",
 }
 
 // Values

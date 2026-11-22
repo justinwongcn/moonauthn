@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "justinwongcn/moonauth/core"
+package "justinwongcn/moonauthn/core"
 
 // Values
 pub fn all_providers() -> Array[ProviderDescriptor]

@@ -181,7 +181,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `state`（一次性消费，重放拒绝），不再「回调时凭空重建 + 硬编码 state」；
   `bare-async` 补充 stored 流程的取用半程演示（`ChallengeMismatch` / `ChallengeNotFound`）。
 - **CI 第 7 步「文档与实物一致性」机械检查**：新增 `ci/doc_check.sh`（由 `ci/check.sh` 统一调用）。
-  文档中的文件路径（权威来源 `ls`/`find`）、库内包路径（`justinwongcn/moonauth/...` 对目录）、
+  文档中的文件路径（权威来源 `ls`/`find`）、库内包路径（`justinwongcn/moonauthn/...` 对目录）、
   库内标识符（`@pkg.Ident` / `Type::name` 对 `.mbti`）必须与实物一致；「伪包名」与「不存在的文件名」
   两类历史事故已通过注入坏例验证可被捕获。检查范围为随包发布的 `README.md` / `CHANGELOG.md` / `docs/**/*.md`。
 - **四个新平台 provider**：`provider/github`、`provider/discord`（标准 OAuth2 + PKCE，骑 `@oauth` seam）、
@@ -286,4 +286,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [ ] 打 tag：`git tag vX.Y.Z && git push --tags`。
 - [ ] 发布：`moon publish`（**需人工执行并确认账号**，不在本仓库自动化范围内）。
 
-[0.1.0]: https://github.com/justinwongcn/moonauth/releases/tag/v0.1.0
+[0.1.0]: https://github.com/justinwongcn/moonauthn/releases/tag/v0.1.0

@@ -70,7 +70,7 @@ name = "your/app"
 version = "0.1.0"
 
 import {
-  "justinwongcn/moonauth@0.1.0",
+  "justinwongcn/moonauthn@0.1.0",
 }
 ```
 
@@ -78,7 +78,7 @@ import {
 
 ```moonbit
 import {
-  "justinwongcn/moonauth/provider/google" @google,
+  "justinwongcn/moonauthn/provider/google" @google,
 }
 ```
 

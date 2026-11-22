@@ -1,5 +1,5 @@
 import {
-  "justinwongcn/moonauth/core" @core,
+  "justinwongcn/moonauthn/core" @core,
   "mizchi/experimental_crypto/getrandom",
 }
 

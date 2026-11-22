@@ -1,11 +1,11 @@
 import {
-  "justinwongcn/moonauth/core" @core,
-  "justinwongcn/moonauth/provider/google" @google,
+  "justinwongcn/moonauthn/core" @core,
+  "justinwongcn/moonauthn/provider/google" @google,
 }
 
 import {
   "moonbitlang/core/debug",
-  "justinwongcn/moonauth/core" @core,
+  "justinwongcn/moonauthn/core" @core,
   "moonbitlang/async",
 } for "test"
 

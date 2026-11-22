@@ -1,6 +1,6 @@
 # QQ 接入
 
-> 子包：`justinwongcn/moonauth/provider/qq`
+> 子包：`justinwongcn/moonauthn/provider/qq`
 > 协议：QQ 互联 OAuth 2.0；token 端点默认 form-encoded；`/oauth2.0/me` 返回 **JSONP**。
 
 ## 1. 申请步骤

@@ -1,5 +1,5 @@
 import {
-  "justinwongcn/moonauth/core" @core,
+  "justinwongcn/moonauthn/core" @core,
   "moonbitlang/core/debug",
   "moonbitlang/core/json" @json,
   "moonbitstack/mooncred/jwt" @jwt,
@@ -10,7 +10,7 @@ import {
 }
 
 import {
-  "justinwongcn/moonauth/contract" @contract,
+  "justinwongcn/moonauthn/contract" @contract,
   "moonbitstack/mooncrypt/sign/ecdsa" @ecdsa,
   "moonbitstack/mooncrypt/spec" @spec,
   "moonbitlang/core/encoding/utf8" @utf8,

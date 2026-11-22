@@ -1,6 +1,6 @@
 # Apple 接入
 
-> 子包：`justinwongcn/moonauth/provider/apple`
+> 子包：`justinwongcn/moonauthn/provider/apple`
 > 协议：OIDC，`id_token` 为 RS256；client secret 为 **ES256 JWT**；回调走 **`response_mode=form_post`**。
 
 ## 1. 申请步骤

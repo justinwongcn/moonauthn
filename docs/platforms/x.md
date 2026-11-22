@@ -1,6 +1,6 @@
 # X（Twitter）接入
 
-> 子包：`justinwongcn/moonauth/provider/x`
+> 子包：`justinwongcn/moonauthn/provider/x`
 > 协议：标准 OAuth 2.0 授权码 + **PKCE**。
 
 ## 1. 申请步骤
