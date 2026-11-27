@@ -8,7 +8,7 @@
 const DOC_URL_PREFIX : String = "https://github.com/justinwongcn/moonauthn/blob/main/docs/platforms/"
 
 ///|
-/// 返回十个平台的描述表（顺序稳定：google, apple, wechat, qq, alipay, x, github, discord, dingtalk, feishu）。
+/// 返回十一个平台的描述表（顺序稳定：google, apple, wechat, qq, alipay, x, github, discord, dingtalk, feishu, microsoft）。
 pub fn all_providers() -> Array[ProviderDescriptor] {
   [
     {

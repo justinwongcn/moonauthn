@@ -7,7 +7,7 @@
 | | v1（已作废） | **v2（当前）** |
 |---|---|---|
 | 形态 | 自带 HTTP 服务 + 会话 + 用户表 + 绑定管理页 | **框架无关、零状态的开源工具库** |
-| 提供什么 | 一整套「登录服务」 | 十个平台的协议与密码学细节（第三方登录 / passkey / 2FA） |
+| 提供什么 | 一整套「登录服务」 | 十一个平台的协议与密码学细节（第三方登录 / passkey / 2FA） |
 | 谁建账号 | 服务 | **你**（库不建号） |
 | 谁存映射 | 服务的用户表 | **你**（库不存映射） |
 | 谁发会话 | 服务签发 token | **你**（库不发会话） |
@@ -25,9 +25,9 @@
 | 服务内置的用户表 | 无 | **你**把 `ExternalIdentity` 落进**你的**库 |
 | 会话签发（moon-token） | 无 | **你**自己发 session / JWT / cookie |
 | 身份绑定管理页 | 无 | 页面是业务；库只给 `uid` / `uid_kind` |
-| `Provider` 特化（mars 的 `oauth2_google`） | `provider/google` 等**独立子包** | 十个子包**相互隔离**（LIB-20），只依赖你用到的那条 |
+| `Provider` 特化（mars 的 `oauth2_google`） | `provider/google` 等**独立子包** | 十一个子包**相互隔离**（LIB-20），只依赖你用到的那条 |
 | 服务内的 passkey / TOTP | `passkey` / `totp` 子包 | 纯密码学原语，与「登录服务」解耦 |
-| 内置 `mizchi/mars` | **删除** | 库零 Web 框架；接入示范见 `examples/moonback` / `examples/mars` |
+| 内置 `mizchi/mars` | **删除** | 库零 Web 框架；接入示范见 `examples/moonback` |
 
 ## 3. 迁移步骤（典型）
 

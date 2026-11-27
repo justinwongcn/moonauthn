@@ -109,8 +109,8 @@ google 客户端配置生效后重试一次通过——浏览器走系统代理�
 | google | ✅ | `uid=sub` Stable，`email verified=true`；真实 Google JWKS RS256 验签（token/jwks 经 forwarder）；**azp=aud=client_id 双条款校验**在真实 token 上执行 |
 | alipay | ⏸ | 沙箱配置全部完成（appid/网关/自定义公钥/本地私钥），卡在沙箱登录页验证码图/二维码间歇性加载失败 |
 | wechat | ⏸ | 测试号 appID/secret/回调域（LAN IP）就绪，卡在「域名与后台配置不一致」（配置已核实正确，疑微信侧传播延迟） |
-| google | ⏸ | OAuth 客户端已建（凭据已存 config.json），新客户端配置生效需 5 分钟~数小时，当时未生效 |
 | x | ⏸ | 登录页白屏（被墙 CDN 经代理加载失败），需稳定代理环境 |
 | dingtalk | ⏸ | Owner 决定跳过（当前组织无开发者权限，测试组织创建流程未走完） |
 
-已到手的 4 条记录在 `l2/records/`（gitignored）。
+已到手的 **5 条**记录在 `l2/records/`（gitignored，含真实身份数据，不入库）。
+这里只修正本地留痕数量，**不代表申报书的 9/9 目标已完成**。

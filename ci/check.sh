@@ -9,9 +9,10 @@
 #   0) 依赖引导（ci/bootstrap.sh）：在最新工具链下对 .mooncakes 缓存做幂等兼容性迁移
 #      （旧格式 manifest + `try?` 语法，见脚本头注释）——全新缓存的多轮自愈也在这里
 #   1) native 与 js 双 target 编译 —— 任一失败即红
-#   2) native 与 js 双 target 全量测试 —— 任一失败即红（含 contract 参数化契约）
+#   2) native 与 js 双 target 测试（moonauth 自有包；vendored third_party 套件不入
+#      门禁，原因见 TEST_PKGS 注释）—— 任一失败即红（含 contract 参数化契约）
 #   3) examples/minimal-google 的 LIB-20 隔离：只 import provider/google，且能独立跑通
-#   4) 六个 provider 的 .mbti 中**无第三方类型泄漏**（SDK-03）
+#   4) 十一个 provider 的 .mbti 中**无第三方类型泄漏**（SDK-03）
 #   5) 文档与实物一致性：路径 / 库内包路径 / 标识符（判据 HANDOVER §9.21，逻辑在 ci/doc_check.sh）
 #
 # 用法：./ci/check.sh   （在 moonauth/ 根目录或任意位置运行均可）
@@ -24,6 +25,13 @@ ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 cd "${ROOT_DIR}"
 
 PROVIDERS=(google apple wechat qq alipay x github discord dingtalk feishu microsoft)
+
+# CI 测试面 = moonauth 自有包。vendored third_party/moonbitlang-x 的套件不入门禁：
+# 其 is_windows 测试依赖上游 GitHub CI 专有的 OS_PLATFORM 环境变量（本地 Windows 必败），
+# jwt 嵌套上限用例与当前工具链存在行为漂移；vendored 测试归属上游，需要时手动跑
+# `moon test third_party/moonbitlang-x --target native`。
+TEST_PKGS=(core oauth oidc passkey totp rand store-memory contract qa_verify seam_probe http_e2e)
+for _p in "${PROVIDERS[@]}"; do TEST_PKGS+=("provider/${_p}"); done
 
 red()   { printf '\033[31m%s\033[0m\n' "$*"; }
 green() { printf '\033[32m%s\033[0m\n' "$*"; }
@@ -42,12 +50,12 @@ step "2/7  build js"
 moon build --target js
 green "js build OK"
 
-step "3/7  test native"
-moon test --target native
+step "3/7  test native（moonauth 自有包）"
+moon test "${TEST_PKGS[@]}" --target native
 green "native test OK"
 
-step "4/7  test js"
-moon test --target js
+step "4/7  test js（moonauth 自有包）"
+moon test "${TEST_PKGS[@]}" --target js
 green "js test OK"
 
 step "5/7  LIB-20 isolation: examples/minimal-google imports ONLY provider/google"

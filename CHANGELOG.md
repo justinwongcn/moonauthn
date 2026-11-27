@@ -85,6 +85,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **验收可复现性收尾**：CI 依赖引导在首次 `moon check` 前刷新 registry index，避免 fresh
+  runner 因陈旧索引找不到依赖；`try?` 迁移改为 grep 预筛（无候选即零开销跳过，兑现脚本
+  宣称的 no-op），解释器须实际可运行（Windows Store 的 python3 占位符会被 `--version`
+  探测剔除，python3 优先、python 回退）；CI 测试面收敛为 **moonauth 自有包**——vendored
+  third_party/moonbitlang-x 套件出门禁（其 `is_windows` 测试依赖上游 CI 专有的
+  `OS_PLATFORM` 变量，本地 Windows 必败；jwt 嵌套上限用例与当前工具链存在行为漂移），
+  手动可跑 `moon test third_party/moonbitlang-x --target native`（JEV 决策：B 0.644 /
+  A 0.105 / C 0.250）。README 许可证统一为 Apache-2.0，示例清单移除已删除的
+  mars 并补回 switch-sdk；L2 结果表去除历史重复行，按本地实际留痕修正为 5 条（不代表 9/9 完成）。
 - **examples/bare-async：回调示例改「直传原始 query」**（黑客审计第 2 轮，JEV 确认 0.975）。
   `google_complete_from` 此前把**解码后的** `code` / `state` 重新拼接为 query 再交库解析
   ——平台下发 `code=a%26b`（解码值 `a&b`）时重拼会被二次解析碎裂。现改为 handler 直传
@@ -229,7 +238,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     + 固定测试向量，**下游可复用**（SDK-04）。
 - **示例**（均为独立模块，经 `moon.work` 本地解析库，**不进**库依赖图）
   - `examples/minimal-google`（LIB-20 隔离断言）、`examples/bare-async`（Google + passkey + TOTP）、
-    `examples/moonback`、`examples/mars`（框架只做路由）、`examples/switch-sdk`（官方 SDK 切换示范）。
+    `examples/moonback`（框架只做路由）、`examples/switch-sdk`（官方 SDK 切换示范）。
 - **文档 / 工程化**
   - `README.md`（定位 / 安装 / 5 分钟快速开始 / target 矩阵 / 「不建号·不存映射·不发会话」声明）。
   - `docs/platforms/{google,apple,wechat,qq,alipay,x}.md`（申请步骤 / 配置项 / 踩坑点）。
@@ -275,12 +284,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [ ] 工作树干净，无未提交改动。
 - [ ] 版本号已更新：`moon.mod` 的 `version` 与本 `CHANGELOG.md` 顶部一致。
 - [ ] 本 `CHANGELOG.md` 已写上本次变更（Added / Changed / Fixed / Removed）。
-- [ ] **本地 CI 全绿**：`./ci/check.sh`（native+js 编译、native+js 全量测试、LIB-20、SDK-03）。
+- [ ] **本地 CI 全绿**：`./ci/check.sh`（native+js 编译、moonauth 自有包测试、LIB-20、SDK-03）。
 - [ ] 泄露自检：`provider/*/pkg.generated.mbti` 无第三方类型；`provider/*` 只 import `core`。
 - [ ] 示例可跑：`moon run examples/minimal-google/src`、`examples/bare-async/src`、
-      `examples/moonback/src`、`examples/mars/src`、`examples/switch-sdk/src` 均正常输出。
+      `examples/moonback/src`、`examples/switch-sdk/src` 均正常输出。
 - [ ] `README.md` 的 target 矩阵与「不建号 / 不存映射 / 不发会话」声明为最新。
-- [ ] 六份平台文档的踩坑点与实现一致。
+- [ ] 十一份平台文档的踩坑点与实现一致。
 - [ ] 依赖版本已核对（`moon.mod` 的 5 个依赖）。
 - [ ] （可选）`moon info` 后确认公开接口 diff 与预期一致，无意外破坏性变更。
 - [ ] 打 tag：`git tag vX.Y.Z && git push --tags`。

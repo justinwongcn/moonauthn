@@ -141,14 +141,15 @@ println(identity.uid)          // = Google 的 sub
 | [`examples/minimal-google`](examples/minimal-google) | 只依赖 `provider/google` 的最小模块（LIB-20 隔离断言） |
 | [`examples/bare-async`](examples/bare-async) | 裸 `async` handler：串起 **Google + passkey + TOTP**（mock/向量，零网络） |
 | [`examples/moonback`](examples/moonback) | [`moonback`](https://mooncakes.io/docs/moonbitlang/moonback) **只做路由**，鉴权走库 |
-| [`examples/mars`](examples/mars) | [`mars`](https://mooncakes.io/docs/mizchi/mars) **只做路由**，鉴权走库 |
+| [`examples/switch-sdk`](examples/switch-sdk) | 只替换 `IdTokenVerifier`，验证业务代码不变、能力级替换生效 |
 
-三个可执行示例都在**回环 127.0.0.1**、**固定向量**下运行，不依赖真实资质与外部网络：
+四个示例均不依赖真实资质或外部网络；其中 `moonback` 用一次性回环请求驱动真实路由，完成后自动关闭：
 
 ```bash
-moon run examples/bare-async/src   # 打印 Google 身份 / passkey 契约 12/12 / TOTP RFC 6238 向量
-moon run examples/moonback/src     # 真实路由：/healthz 与 /auth/google/callback（含 state 篡改负例）
-moon run examples/mars/src         # 同上，mars 版
+moon run examples/minimal-google/src --target native  # 最小引入与 LIB-20 隔离
+moon run examples/bare-async/src --target native      # Google 身份 / passkey 12/12 / TOTP RFC 6238 向量
+moon run examples/moonback/src --target native        # /healthz 与 /auth/google/callback（含 state 负例）
+moon run examples/switch-sdk/src --target native      # 官方 SDK 适配器接管 id_token 验签
 ```
 
 > 🔴 注意：`examples/*` 是**独立模块**（经工作区文件 `moon.work` 以**本地路径**解析库），
@@ -192,9 +193,9 @@ impl @core.IdTokenVerifier for OfficialVerifier with fn verify(self, token, expe
 ```bash
 moon build --target native     # native 编译
 moon build --target js         # js 编译
-moon test  --target native     # 全量测试（native）
-moon test  --target js         # 全量测试（js）
-./ci/check.sh                  # 本地一键 CI：双 target 编译 + 全量测试 + 隔离/泄漏断言 + 文档一致性
+moon test  --target native     # 全量测试（native，含 vendored third_party 套件；Windows 本机有 2 个上游环境性用例失败）
+moon test  --target js         # 全量测试（js，含 vendored third_party 套件；同上）
+./ci/check.sh                  # 本地一键 CI：双 target 编译 + moonauth 自有包测试 + 隔离/泄漏断言 + 文档一致性
 ```
 
 CI 逻辑集中在 [`ci/check.sh`](ci/check.sh)（**本机可直接运行**）；`.github/workflows/ci.yml` 只负责
@@ -202,4 +203,5 @@ CI 逻辑集中在 [`ci/check.sh`](ci/check.sh)（**本机可直接运行**）�
 
 ## 许可证
 
-MIT，见 [LICENSE](LICENSE)。
+Apache-2.0，见 [LICENSE](LICENSE)。本地 vendored 代码的来源与许可证说明见
+[`third_party/moonbitlang-x/VENDORED.md`](third_party/moonbitlang-x/VENDORED.md)。
