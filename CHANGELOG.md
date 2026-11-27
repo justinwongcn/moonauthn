@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-11-27
+
+### Fixed
+
+- CI 首次解析依赖前刷新 Mooncakes 索引；无需迁移旧语法时跳过 Python，并在 Windows 上跳过不能运行的商店占位符。
+- `native` / `js` 的 CI 只运行本库测试。随库引入的 `third_party/moonbitlang-x` 测试可按需单独运行。
+- 更新安装和示例文档，统一声明 Apache-2.0 许可证，并移除实测说明中的个人账号标识。
+
+## [0.1.0]
+
+首个公开版本：**框架无关、零状态的第三方登录 / Passkey / 2FA 工具库**。
+
 ### Security
 
 - **core / 11 provider：空授权码 fail-closed**（黑客审计 E1，JEV 确认 0.992；契约
@@ -85,15 +97,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- **验收可复现性收尾**：CI 依赖引导在首次 `moon check` 前刷新 registry index，避免 fresh
-  runner 因陈旧索引找不到依赖；`try?` 迁移改为 grep 预筛（无候选即零开销跳过，兑现脚本
-  宣称的 no-op），解释器须实际可运行（Windows Store 的 python3 占位符会被 `--version`
-  探测剔除，python3 优先、python 回退）；CI 测试面收敛为 **moonauth 自有包**——vendored
-  third_party/moonbitlang-x 套件出门禁（其 `is_windows` 测试依赖上游 CI 专有的
-  `OS_PLATFORM` 变量，本地 Windows 必败；jwt 嵌套上限用例与当前工具链存在行为漂移），
-  手动可跑 `moon test third_party/moonbitlang-x --target native`（JEV 决策：B 0.644 /
-  A 0.105 / C 0.250）。README 许可证统一为 Apache-2.0，示例清单移除已删除的
-  mars 并补回 switch-sdk；L2 结果表去除历史重复行，按本地实际留痕修正为 5 条（不代表 9/9 完成）。
 - **examples/bare-async：回调示例改「直传原始 query」**（黑客审计第 2 轮，JEV 确认 0.975）。
   `google_complete_from` 此前把**解码后的** `code` / `state` 重新拼接为 query 再交库解析
   ——平台下发 `code=a%26b`（解码值 `a&b`）时重拼会被二次解析碎裂。现改为 handler 直传
@@ -148,8 +151,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **microsoft：新增 Microsoft Entra ID provider**（依据 2026-11-13 已核验调研文档
-  `docs/providers/microsoft.md`，经 worktree 实现）。v2.0 授权码 + OIDC：`MicrosoftConfig`
+- **microsoft：新增 Microsoft Entra ID provider**。v2.0 授权码 + OIDC：`MicrosoftConfig`
   显式 tenant 策略（`common`/`organizations`/`consumers`/tenant-id，默认 `common`），
   端点 / JWKS 按 tenant 展开；PKCE S256 与 `nonce` 恒发；scope 默认
   `openid profile email`（refresh 由调用方追加 `offline_access`）。🔴 **per-tenant
@@ -212,11 +214,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 新增 provider 的归一化函数一律收**原始 JSON 文本**（`qq_identity` 先例），
   `Json` 类型不出现在任何 `pub` 签名（SDK-03）。
 
-## [0.1.0] - 2026-10-10
-
-首个公开版本：**框架无关、零状态的第三方登录 / Passkey / 2FA 工具库**。
-
-### Added
+### 首版基础能力（2026-10-10）
 
 - **核心**
   - `core`：值类型（`ExternalIdentity` / `AuthStart` / `CallbackParams` / `TokenSet` / `IdTokenClaims` …）、
@@ -295,4 +293,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [ ] 打 tag：`git tag vX.Y.Z && git push --tags`。
 - [ ] 发布：`moon publish`（**需人工执行并确认账号**，不在本仓库自动化范围内）。
 
-[0.1.0]: https://github.com/justinwongcn/moonauthn/releases/tag/v0.1.0
+[0.1.1]: https://github.com/justinwongcn/moonauthn/tree/v0.1.1
+[0.1.0]: https://github.com/justinwongcn/moonauthn/tree/243db8c67e0316eaaddddd25dbbb3ce57b4bf825

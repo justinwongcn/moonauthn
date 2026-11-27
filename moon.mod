@@ -1,5 +1,7 @@
 name = "justinwongcn/moonauthn"
-version = "0.1.0"
+version = "0.1.1"
+readme = "README.md"
+repository = "https://github.com/justinwongcn/moonauthn"
 license = "Apache-2.0"
 description = "Framework-agnostic, zero-state authentication toolkit for MoonBit: third-party login (11 providers), Passkey/WebAuthn, and TOTP with all non-determinism injected through seams."
 keywords = [ "auth", "authentication", "oauth", "oidc", "passkey", "webauthn", "totp", "fido2", "sso" ]

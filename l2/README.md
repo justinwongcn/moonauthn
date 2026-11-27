@@ -103,8 +103,8 @@ google 客户端配置生效后重试一次通过——浏览器走系统代理�
 | 平台 | 结果 | 要点 |
 |---|---|---|
 | microsoft | ✅ | 零注册（Azure CLI 公开客户端），消费者租户 issuer 验签，MSA `email_verified=false` 归一 |
-| github | ✅ | `uid=124032292` Stable；`/user` email=null → **邮箱回退**（/user/emails）实测生效 `verified=true`；PKCE 被接受 |
-| discord | ✅ | `uid=913455297832579086` Stable；forwarder 转发链路全通（chunked 请求体 + 强制 identity 编码两个坑已修） |
+| github | ✅ | 返回稳定的用户 ID；`/user` email=null → **邮箱回退**（/user/emails）实测生效 `verified=true`；PKCE 被接受 |
+| discord | ✅ | 返回稳定的用户 ID；forwarder 转发链路全通（chunked 请求体 + 强制 identity 编码两个坑已修） |
 | feishu | ✅ | `uid=union_id` Stable；未开邮箱权限 → `email=<none>`（**文档化降级行为**实测成立）；免审权限 + 个人版自发布 |
 | google | ✅ | `uid=sub` Stable，`email verified=true`；真实 Google JWKS RS256 验签（token/jwks 经 forwarder）；**azp=aud=client_id 双条款校验**在真实 token 上执行 |
 | alipay | ⏸ | 沙箱配置全部完成（appid/网关/自定义公钥/本地私钥），卡在沙箱登录页验证码图/二维码间歇性加载失败 |

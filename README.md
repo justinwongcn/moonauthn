@@ -70,7 +70,7 @@ name = "your/app"
 version = "0.1.0"
 
 import {
-  "justinwongcn/moonauthn@0.1.0",
+  "justinwongcn/moonauthn@0.1.1",
 }
 ```
 

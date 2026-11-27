@@ -2,7 +2,7 @@
 
 > 子包：`justinwongcn/moonauthn/provider/microsoft`
 > 协议：Microsoft identity platform **v2.0** + OIDC，`id_token` 为 RS256；PKCE S256 恒启用。
-> 依据：调研文档 `docs/providers/microsoft.md`（2026-11-13 官方接口已核验）。
+> 依据：Microsoft identity platform 官方接口说明（2026-11-13 已核验）。
 
 ## 1. 申请步骤
 
