@@ -164,7 +164,7 @@ fn base64_std_value(c : Int) -> Int {
 ///
 /// SHA-256 取自 `1726914517-spec/moon_otp`（其 `sha256` 是纯函数，无第三方类型逃逸）。
 ///
-/// 🔴 **RFC 7636 §4.1 护栏（黑客审计第 1 轮确认）**：本函数是全部 verifier 的
+/// 🔴 **RFC 7636 §4.1 护栏**：本函数是全部 verifier 的
 /// 唯一咽喉点（生成路径已由 `generate_code_verifier` 护栏，**调用方自带**的
 /// verifier 也必须过同一校验）——长度 43~128 字符、字符集仅限 RFC 3986
 /// unreserved（`A-Z a-z 0-9 - . _ ~`）。不合规即 `InvalidInput`：否则错误会

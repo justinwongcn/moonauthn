@@ -282,8 +282,7 @@ fn check_nonce(claims : Map[String, Json], nonce : String?) -> Unit raise @core.
 }
 
 ///|
-/// 🔴 azp 双条款校验（OIDC Core §3.1.3.7 / RFC 9068；实现契约 §4.2 azp；黑客审计
-/// F13 实测 + OCR 审查确认两处残余）：
+/// 🔴 azp 双条款校验（OIDC Core §3.1.3.7 / RFC 9068；实现契约 §4.2 azp）：
 ///
 /// 条款 (a)——多受众：`aud` 的**字符串值个数 > 1** 时，`azp` 必须存在且属于期望受众；
 /// 条款 (b)——`azp` **只要存在**（无论 aud 单/多值），其值必须**同时**属于
@@ -292,7 +291,7 @@ fn check_nonce(claims : Map[String, Json], nonce : String?) -> Unit raise @core.
 ///
 /// 🔴 触发条件取 **raw `aud` 形态**而非归一化视图：`aud` 数组含非字符串元素一律
 /// `ParseError`（fail-closed）——归一化会把非字符串元素静默丢弃，使
-/// `["client-1",42]` 这类载荷绕过 azp 门控（OCR 审查确认的绕过路径）。
+/// `["client-1",42]` 这类载荷不得绕过 azp 门控。
 fn check_azp(
   claims : Map[String, Json],
   audiences : Array[String],
@@ -339,7 +338,7 @@ fn check_azp(
 /// 字符串化进 `raw : Map[String, String]`）。
 fn build_claims(claims : Map[String, Json]) -> @core.IdTokenClaims raise @core.AuthError {
   let subject = match str_claim(claims, "sub") {
-    // 🔴 空串视为缺失（契约 §2.2 subject 非空；黑客审计 E2 同口径）。
+    // 🔴 空串视为缺失（契约 §2.2 subject 非空）。
     Some(s) =>
       if s.length() > 0 {
         s

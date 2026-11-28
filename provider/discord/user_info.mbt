@@ -79,7 +79,7 @@ pub fn discord_identity(user_json : String) -> @core.ExternalIdentity raise @cor
 ///|
 /// 按 Discord 规则拼头像 URL：`a_` 前缀（动图哈希）→ `.gif`，否则 `.png`。
 ///
-/// 🔴 `uid` / `hash` 一律百分号编码（黑客审计第 2 轮确认）：两者来自平台响应，
+/// 🔴 `uid` / `hash` 一律百分号编码：两者来自平台响应，
 /// 正常形态为数字雪花 ID 与 hex/`a_` 前缀哈希，但异常形态（含 `/` `?` `#`）会
 /// 篡改 URL——与库内「动态值一律 percent_encode」教义对齐。
 fn discord_avatar_url(uid : String, hash : String) -> String {

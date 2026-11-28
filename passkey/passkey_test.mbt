@@ -706,7 +706,7 @@ async test "webauthn contract: run_webauthn_with accepts caller-provided vectors
 }
 
 ///|
-/// 🔴 WebAuthn Level 3：credentialId **不得超过 1023 字节**（黑客审计第 1 轮确认
+/// 🔴 WebAuthn Level 3：credentialId **不得超过 1023 字节**（
 /// 修复）——超长凭据的注册输入必须被 `InvalidInput` 拒绝，不得透传给调用方存储。
 async test "passkey: credential id over 1023 bytes is rejected" {
   let oversized = Bytes::makei(2000, fn(i) { (i % 256).to_byte() })

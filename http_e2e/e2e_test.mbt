@@ -1,6 +1,6 @@
-//! moonauth / http_e2e —— **端到端测试（JEV 标准，2026-11-19）**。
+//! moonauth / http_e2e —— **端到端测试**。
 //!
-//! JEV 判定的本轮标准（e2e_standard_out.json）：补 S1（google complete_auth 全链路
+//! 本轮标准：补 S1（google complete_auth 全链路
 //! 0.961）/ S2（400 错误归一端到端 0.809）/ S3（POST 体完整性 0.942）；断言深度
 //! **both**（传输层专项 + 全链路专项分开）；服务器 **shared per scenario class**
 //! （同一场景类共享服务器，token→JWKS 请求序列）。S4（microsoft 租户派生 0.496）/
@@ -76,7 +76,7 @@ async fn start_echo_server(group : @async.TaskGroup[Unit]) -> Int {
 }
 
 ///|
-/// E2E-S1（JEV 0.961，全链路深度）：google `complete_auth` **全链路**——真实 TCP
+/// E2E-S1（全链路深度）：google `complete_auth` **全链路**——真实 TCP
 /// 连接上完成 POST form 换 token → GET JWKS → RS256 验签 → 归一身份。本地服务器
 /// 承担 token / JWKS 两个端点（shared per scenario class）；时钟注入 FixedClock
 /// （fixed 向量 exp=2023-11，真实系统时钟下必然 TokenExpired）。
@@ -117,7 +117,7 @@ async test "E2E S1: google complete_auth full chain over real local HTTP" {
 }
 
 ///|
-/// E2E-S2（JEV 0.809，全链路深度）：本地服务器对 token 端点返回 **400 + error
+/// E2E-S2（全链路深度）：本地服务器对 token 端点返回 **400 + error
 /// JSON**——端到端验证 `ProviderError` 归一（错误消息完整穿透真实 HTTP）。
 async test "E2E S2: 400 with error JSON normalizes to provider_error end to end" {
   @async.with_task_group() <| group => {
@@ -156,7 +156,7 @@ async test "E2E S2: 400 with error JSON normalizes to provider_error end to end"
 }
 
 ///|
-/// E2E-S3（JEV 0.942，传输层专项）：POST 体**逐字节**完整性——回显服务器把请求体
+/// E2E-S3（传输层专项）：POST 体**逐字节**完整性——回显服务器把请求体
 /// 原样写回，断言 form 编码体经真实 TCP 往返后完全一致（分帧/编码无失真）。
 async test "E2E S3: POST form body survives the real HTTP round trip byte-exact" {
   @async.with_task_group() <| group => {

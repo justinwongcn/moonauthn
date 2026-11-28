@@ -57,7 +57,7 @@ async fn google_login(
 ///|
 /// `/callback` 段：按回调 `state` **一次性**取回暂存的 `AuthStart`，交库完成校验。
 ///
-/// 🔴 **直传原始 query 字符串**（黑客审计第 2 轮确认修正）：handler 应把浏览器回传的
+/// 🔴 **直传原始 query 字符串**：handler 应把浏览器回传的
 /// **原始** query（`req.query_string()`）整体交给 `from_query_string`——**不要**把解码后的
 /// `code` / `state` 重新拼接（平台下发 `code=a%26b` 时解码值为 `a&b`，重拼会被二次解析
 /// 碎裂，state 校验失败且难排查）。本示例的入参即「原始 query」形态。

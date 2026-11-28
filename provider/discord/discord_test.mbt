@@ -292,7 +292,7 @@ async test "discord: default secrets come from the injected RandomSource" {
 }
 
 ///|
-/// 🔴 头像 URL 的 uid / hash 必须百分号编码（黑客审计第 2 轮确认修复）：
+/// 🔴 头像 URL 的 uid / hash 必须百分号编码：
 /// 异常形态（含 `/` `?`）不得篡改 CDN URL。
 async test "discord: avatar url components are percent-encoded" {
   let body = "{\"id\":\"12345\",\"global_name\":\"Dev\",\"username\":\"dev\",\"avatar\":\"a_hostile/path?x\"}"

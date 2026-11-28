@@ -105,7 +105,7 @@ fn verify_registration_input(
     e => raise map_webauthn_error(e)
   }
   // 🔴 WebAuthn Level 3 §6.4.1：credentialId **不得超过 1023 字节**——超长凭据
-  // 一律拒绝（黑客审计第 1 轮确认：此前无上限，攻击者可提交超大凭据交由调用方
+  // 一律拒绝（此前无上限，攻击者可提交超大凭据交由调用方
   // 无限存储）。上游 `@webauthn` 解析时不设限，防线在本层收口。
   if result.credential_id.length() > 1023 {
     raise @core.InvalidInput(

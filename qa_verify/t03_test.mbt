@@ -358,7 +358,7 @@ async test "t03 §2.3 qq jsonp: error branch -> provider_error" {
 }
 
 ///|
-/// 🔴 `client_id` 绑定校验（黑客审计第 1 轮确认修复）：`me` 响应的 `client_id`
+/// 🔴 `client_id` 绑定校验：`me` 响应的 `client_id`
 /// 与期望 appid 不一致 → `provider_error`（code = `client_id_mismatch`）。
 async test "t03 §2.3 qq jsonp: client_id mismatch -> provider_error" {
   let body = "callback( {\"client_id\":\"OTHER-APP\",\"openid\":\"o-1\"} );"

@@ -1,7 +1,7 @@
 //! 白盒单测：`check_azp` 双条款契约（provider 无关——`IdTokenVerifier` seam 的
 //! 全部消费者 google/apple/microsoft 共享本契约）。
 //!
-//! 黑客审计 F13（多受众 azp 缺失）+ OCR 审查（azp ∉ token aud 声明 / 单值 aud +
+//! 多受众 azp 缺失 + azp ∉ token aud 声明 / 单值 aud +
 //! 外部 azp / raw `aud` 数组非字符串元素）的对应回归。
 
 ///|

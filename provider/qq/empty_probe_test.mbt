@@ -1,4 +1,4 @@
-//! 健壮性回归（黑客审计 E2，JEV 0.979）：空 openid 视为缺失（契约 §2.2 subject 非空）。
+//! 健壮性回归：空 openid 视为缺失（契约 §2.2 subject 非空）。
 
 ///|
 test "qq: empty openid in me response is rejected" {

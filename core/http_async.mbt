@@ -15,7 +15,7 @@
 //!
 //! 所有第三方（`@http` / `@io`）异常在边界处立即 `catch` 并转换为 `AuthError`。
 //!
-//! 🔴 **已知限制（黑客审计第 1 轮确认）**：本实现**不支持超时**——上游
+//! 🔴 **已知限制**：本实现**不支持超时**——上游
 //! `@http.request` 没有任何超时参数，且 `moonbitlang/async` 没有公开的
 //! spawn/select/cancel 原语可供竞速实现（`internal/coroutine` 跨模块不可引用）。
 //! 平台端点 TCP 黑洞时请求会无限挂起。**超时职责归调用方的 `HttpClient` 实现**：
@@ -54,7 +54,7 @@ pub fn AsyncHttpClient::new() -> AsyncHttpClient {
 /// （后覆盖前）。因此 `Set-Cookie` 这类允许多值的头在本函数中将**静默丢失前序取值**，
 /// 本函数无从挽救——它拿到的已是合并后的单值映射。
 /// 修复需改上游数据结构（携带多值头的能力）或替换 HTTP 栈，超出 T01 范围；
-/// 已作为已知限制记录，交由架构归档（ARCH 已知限制）。
+/// 已作为已知限制记录。
 fn map_response_headers(
   headers : Map[@http.CaseInsensitiveString, String],
 ) -> Map[String, String] {

@@ -301,7 +301,7 @@ async test "alipay: missing both open_id and user_id is a parse error" {
 }
 
 ///|
-/// 🔴 空 `auth_code`（黑客审计 E1，JEV 0.992）：空串视为缺失，回退 `code` 参数；
+/// 🔴 空 `auth_code`：空串视为缺失，回退 `code` 参数；
 /// 两处均空 → `missing_param`。契约 §3.2.5「授权码存在且长度合理」。
 async test "alipay: empty auth_code falls back to code; both empty is missing_param" {
   let client : &@core.HttpClient = @contract.MockHttpClient::new([

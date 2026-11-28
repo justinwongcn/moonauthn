@@ -1,4 +1,4 @@
-//! 健壮性回归（黑客审计 E2，JEV 0.979）：空 openid 视为缺失；空 uid 兜底防线。
+//! 健壮性回归：空 openid 视为缺失；空 uid 兜底防线。
 
 ///|
 test "wechat: empty openid in token response is rejected" {

@@ -164,7 +164,7 @@ pub fn CallbackParams::provider_error(self : CallbackParams) -> AuthError? {
 /// 参数存在且**非空**才返回；缺失或空串一律 `MissingParam(key)`（空串视为缺失）。
 ///
 /// 🔴 供各 provider 在 state 校验后提取 `code` / `auth_code` / `id_token` 等使用——
-/// 此前 `Some("")` 会直接通过「存在性检查」并带着空值发起出站请求（黑客审计 E1 实测）。
+/// 此前 `Some("")` 会直接通过「存在性检查」并带着空值发起出站请求。
 pub fn CallbackParams::required_non_empty(
   self : CallbackParams,
   key : String,

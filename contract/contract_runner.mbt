@@ -45,7 +45,7 @@ pub fn all_pass(cases : Array[CaseResult]) -> Bool {
 ///|
 /// 打印每个用例的结果；若有失败则 `raise AuthError`。
 ///
-/// 🔴 失败路径**可被调用方 `catch`**（与 HANDOVER §12.3「所有失败路径都可捕获」的
+/// 🔴 失败路径**可被调用方 `catch`**（与「所有失败路径都可捕获」的
 /// 记账一致）——在 `async test` 里直接调用即可，错误向上传播使该测试失败（CI 非零
 /// 退出）；在长驻服务里误用时也不会不可捕获地崩掉进程。
 pub fn assert_all_pass(cases : Array[CaseResult]) -> Unit raise @core.AuthError {

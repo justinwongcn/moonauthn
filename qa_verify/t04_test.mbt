@@ -285,7 +285,7 @@ async test "T04 §2.3 otpauth_uri shape" {
 }
 
 ///|
-/// **window 漂移边界（仅回看，黑客审计第 2 轮修正语义）**：window=1 时
+/// **window 漂移边界（仅回看）**：window=1 时
 /// 当前步 / 前一步（at-30）通过；未来步（at+30）与 ±2 一律拒绝。
 async test "T04 §2.3 window drift: lookback-only (current/previous pass, future and ±2 rejected)" {
   let p = t4_totp_sha1_8()

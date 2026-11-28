@@ -719,7 +719,7 @@ async test "standard oauth: 200 with an error body is provider_error (GitHub-sty
 }
 
 ///|
-/// 🔴 溢出防护（JEV 扫描第 1 轮复核确认）：异常大的 `expires_in` 必须归一为
+/// 🔴 溢出防护：异常大的 `expires_in` 必须归一为
 /// `None`（「未知」），不得静默回绕/截断出看似合法的错误值。
 async test "standard oauth: oversized expires_in is None, not a truncated value" {
   let client = @contract.MockHttpClient::new([
@@ -752,7 +752,7 @@ async test "standard oauth: expires_in beyond Int32 range is None, normal values
 }
 
 ///|
-/// 🔴 PKCE 全路径护栏（黑客审计第 1 轮确认修复）：调用方自带的 verifier 必须满足
+/// 🔴 PKCE 全路径护栏：调用方自带的 verifier 必须满足
 /// RFC 7636 §4.1（43~128 字符 + unreserved 字符集），违规即 `InvalidInput`——
 /// 此前自带 verifier 完全不校验，错误延迟到 token 交换才由 provider 端暴露。
 async test "pkce: supplied code_verifier is validated by s256_challenge" {

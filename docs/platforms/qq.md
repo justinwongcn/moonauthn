@@ -56,7 +56,7 @@ let identity = @qq.complete_auth(config, callback, start)
 - 🔴 **`/oauth2.0/me` 返回 JSONP**：形如 `callback( {"openid":"..."} );`，带固定 callback 名与**尾部 `;`**。
   必须**防御性剥壳**（取第一个 `(` 与第一个 `)` 之间）才能当 JSON 解析；错误分支为
   `callback( {"error":N,"error_description":"..."} );`，剥壳后按 `error` 字段归一为 `ProviderError`。
-- 🔴 **`client_id` 绑定校验（2026-11-18 黑客审计加入）**：`me` 响应携带该 access_token 所属
+- 🔴 **`client_id` 绑定校验**：`me` 响应携带该 access_token 所属
   应用的 `client_id`。库在 `qq_parse_openid` 中**出现即校验**：与配置 appid 不一致（或非字符串）
   → `ProviderError("client_id_mismatch", ...)`——防止他应用的 openid 混入本应用身份绑定。
   响应**缺失** `client_id` 时无法校验、放行（QQ 部分响应形态历史上有缺省）；需要更强保证的

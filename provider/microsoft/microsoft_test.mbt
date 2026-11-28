@@ -315,7 +315,7 @@ async test "microsoft: state mismatch is rejected" {
 }
 
 ///|
-/// 🔴 回归（黑客审计 F13，JEV 0.992）：多受众 token（aud 含我们的 client_id）但
+/// 🔴 回归：多受众 token（aud 含我们的 client_id）但
 /// `azp` 指向他方应用——OIDC Core §3.1.3.7 要求校验 azp，必须拒绝，防止「为其他
 /// 受众签发」的 token 被复用。
 
@@ -426,7 +426,7 @@ async test "microsoft: single-audience token with foreign azp is rejected" {
 }
 
 ///|
-/// 🔴 raw `aud` 门控（OCR 确认的绕过路径）：数组含**非字符串元素**（如数字）→
+/// 🔴 raw `aud` 门控：数组含**非字符串元素**（如数字）→
 /// `ParseError`（fail-closed），不得静默丢弃元素后绕过 azp 门控。
 async test "microsoft: aud array with non-string element is parse_error" {
   let claims = "{\"iss\":\"https://login.microsoftonline.com/" +
@@ -445,7 +445,7 @@ async test "microsoft: aud array with non-string element is parse_error" {
 }
 
 ///|
-/// 🔴 F-a 攻击回归（OCR 批次）：`azp`（client-2）**不在 token 自身的 aud 声明**里
+/// 🔴 F-a 攻击回归：`azp`（client-2）**不在 token 自身的 aud 声明**里
 /// （aud=[client-1, client-3]），即便它属于配置的期望受众集合也必须拒绝——
 /// 「为其他受众签发」的 token 不得被复用。经 `IdTokenVerifier` seam 直接验证
 /// （`audiences` 是公开多值字段，多客户端装配场景真实可达）。

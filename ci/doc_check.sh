@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# moonauth —— 文档与实物一致性检查（判据：HANDOVER §9.21 / ARCH §10.15）。
+# moonauth —— 文档与实物一致性检查。
 #
 # 项目历史上「文档写了实物不存在的东西」中过 6 次（伪包名 ×4 + 不存在的文件名
 # + 若干文件路径）。本脚本把判据落成机械检查，作为 CI 的一步：
@@ -15,16 +15,15 @@
 #        - `Type::name`：当 `Type` 判定为本库类型时，`name` 必须已知。
 #
 # 检查范围 = 随包发布的文档：`README.md` / `CHANGELOG.md` / `docs/**/*.md`。
-# `plan/`（工作区内部）与 `HANDOVER.md` 不属发布面，不在本检查内。
+# 工作区内部文档不属发布面，不在本检查内。
 #
 # 已知的第三方写法（`@env.` / `@otp.` / `@jwt.` / `@example.com` 等）经白名单排除；
-# 即便如此，新增命中仍须按 HANDOVER §9.20 读语境人工复核，不得盲信本脚本。
+# 即便如此，新增命中仍须读语境人工复核，不得盲信本脚本。
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"     # moonauth 模块根
-PARENT_DIR="$(cd "${ROOT_DIR}/.." && pwd)"     # 工作区根（容纳 plan/ 等）
 cd "${ROOT_DIR}"
 
 red()   { printf '\033[31m%s\033[0m\n' "$*"; }
@@ -56,7 +55,7 @@ OUR_PKGS="${OUR_PKGS//$'\n'/ }"
 in_our_pkgs() { [[ "${OUR_PKGS}" == *" $1 "* ]]; }
 
 # 文档合法提及、但不属本库 `.mbti` 的例外（内建 / 第三方）。
-#  - String::compare：HANDOVER §9.6 记档的坑名（长度优先 vs 字典序），String 是内建类型。
+#  - String::compare：长度优先 vs 字典序，String 是内建类型。
 ID_ALLOW=" String::compare "
 id_allowed() { [[ "${ID_ALLOW}" == *" $1 "* ]]; }
 
@@ -96,7 +95,7 @@ check_path() {
     # 通配写法（如 provider/*/pkg.generated.mbti）：能展开即通过
     if compgen -G "${p}" >/dev/null 2>&1; then return 0; fi
   else
-    if [[ -e "${ROOT_DIR}/${p}" || -e "${PARENT_DIR}/${p}" || -e "${fdir}/${p}" ]]; then return 0; fi
+    if [[ -e "${ROOT_DIR}/${p}" || -e "${fdir}/${p}" ]]; then return 0; fi
     if [[ "${p}" != */* ]]; then
       # 裸文件名：允许落在任意包目录（如 `memory_wbtest.mbt`、`pkg.generated.mbti`）
       if find . \( -path './.mooncakes' -o -path './_build' \) -prune -o \
@@ -172,7 +171,7 @@ while IFS= read -r f; do
 done <<<"${DOCS}"
 
 if (( VIOLATIONS > 0 )); then
-  red "doc_check FAILED: ${VIOLATIONS} 处文档与实物不一致（每处须读语境复核，判据 HANDOVER §9.20/§9.21）"
+  red "doc_check FAILED: ${VIOLATIONS} 处文档与实物不一致（每处须读语境复核）"
   exit 1
 fi
 green "docs match reality: paths / package paths / identifiers（README + CHANGELOG + docs/**）"

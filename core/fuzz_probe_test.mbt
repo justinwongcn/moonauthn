@@ -47,7 +47,7 @@ test "FUZZ: CallbackParams query parsing never panics on garbage" {
 }
 
 ///|
-/// P1（黑客审计第 1 轮观察 → 回归）：percent_decode 的对抗形态——截断转义与非
+/// P1 回归：percent_decode 的对抗形态——截断转义与非
 /// 法 hex 原样保留、NUL 字节不丢弃、分号不是分隔符、值内 `=` 保留、裸键为空值。
 test "P1: percent_decode adversarial shapes" {
   @debug.assert_eq(@core.CallbackParams::from_query_string("a=%4").get("a"), Some("%4"))

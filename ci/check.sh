@@ -13,7 +13,7 @@
 #      门禁，原因见 TEST_PKGS 注释）—— 任一失败即红（含 contract 参数化契约）
 #   3) examples/minimal-google 的 LIB-20 隔离：只 import provider/google，且能独立跑通
 #   4) 十一个 provider 的 .mbti 中**无第三方类型泄漏**（SDK-03）
-#   5) 文档与实物一致性：路径 / 库内包路径 / 标识符（判据 HANDOVER §9.21，逻辑在 ci/doc_check.sh）
+#   5) 文档与实物一致性：路径 / 库内包路径 / 标识符（逻辑在 ci/doc_check.sh）
 #
 # 用法：./ci/check.sh   （在 moonauth/ 根目录或任意位置运行均可）
 

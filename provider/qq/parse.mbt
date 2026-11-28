@@ -59,7 +59,7 @@ pub fn qq_unwrap_jsonp(body : String) -> String {
 ///|
 /// 解析 JSONP `me` 响应 → `openid`（先剥壳，再按错误码 / 字段处理）。
 ///
-/// 🔴 **`client_id` 绑定校验（黑客审计第 1 轮确认）**：`me` 响应携带该
+/// 🔴 **`client_id` 绑定校验**：`me` 响应携带该
 /// access_token 所属应用的 `client_id`——出现时**必须**与配置 appid 一致，
 /// 不一致即 `ProviderError("client_id_mismatch", ...)`（防 token/openid 混入
 /// 他应用的混淆攻击，与调研契约对支付宝「回调 app_id 与本地一致」的要求同构）。
@@ -87,7 +87,7 @@ pub fn qq_parse_openid(
   }
   match m.get("openid") {
     // 🔴 空串视为缺失（契约 §2.2：subject 必须存在且非空——空串 uid 落进调用方
-    // 映射表可与其它空串身份碰撞；黑客审计 E2 实测）。
+    // 映射表可与其它空串身份碰撞）。
     Some(String(s)) =>
       if s.length() > 0 {
         s
